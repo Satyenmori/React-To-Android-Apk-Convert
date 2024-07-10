@@ -6,6 +6,16 @@
   height: 40vmin;
   pointer-events: none;
 }
+button{
+  width: 300px;
+  padding: 20px;
+  margin-top: 15px;
+  border-radius: 10px;
+  background-color: #FFD700;
+  font-size: 25px;
+  color: white;
+  cursor: pointer;
+}
 
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
