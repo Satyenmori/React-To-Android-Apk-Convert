@@ -1,5 +1,6 @@
 {
   "appId": "com.example.app",
   "appName": "apk-app",
-  "webDir": "build"
+  "webDir": "build",
+  "bundledWebRuntime": false
 }
