@@ -1,83 +1,80 @@
-import React, { useState } from "react";
-import { jsPDF } from "jspdf";
+import React, { useState, useEffect } from "react";
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { FileOpener } from '@capacitor-community/file-opener';
 import { Capacitor } from '@capacitor/core';
 import "./App.css";
 
 function App() {
-  const [pdfGenerated, setPdfGenerated] = useState(false);
+  const [fileUri, setFileUri] = useState(null);
+
+  useEffect(() => {
+    requestPermissions();
+  }, []);
 
   const requestPermissions = async () => {
-    const permissionResult = await Filesystem.requestPermissions();
-    if (permissionResult.publicStorage !== 'granted') {
-      alert('Permission to write files was denied');
-      throw new Error('Permission denied');
-    }
-  };
-
-  const generatePDF = async () => {
-    try {
-      if (Capacitor.getPlatform() === 'android') {
-        await requestPermissions();
-      }
-
-      const doc = new jsPDF();
-      doc.text("This is my menu PDF!", 10, 10);
-      const pdfOutput = doc.output('datauristring');
-
-      const base64data = pdfOutput.split(',')[1];
-
+    if (Capacitor.isNativePlatform()) {
       try {
-        await Filesystem.writeFile({
-          path: 'menu.pdf',
-          data: base64data,
-          directory: Directory.External,
-          encoding: Encoding.Base64,
-        });
-        alert('PDF saved successfully');
-        setPdfGenerated(true);
-      } catch (error) {
-        console.error('Error saving PDF:', error);
-        alert('Failed to save PDF: ' + error.message);
+        const status = await Filesystem.requestPermissions();
+        if (status.publicStorage !== 'granted') {
+          alert('Permission denied');
+        }
+      } catch (err) {
+        console.warn(err);
       }
-    } catch (error) {
-      console.error('Error:', error);
     }
   };
 
-  const openPDF = async () => {
+  const handleFileChange = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      await uploadFile(file);
+    }
+  };
+
+  const uploadFile = async (file) => {
     try {
-      const fileUri = await Filesystem.getUri({
+      const base64data = await convertFileToBase64(file);
+
+      const fileName = `uploaded_file.${file.name.split('.').pop()}`;
+
+      const result = await Filesystem.writeFile({
+        path: fileName,
+        data: base64data,
         directory: Directory.External,
-        path: 'menu.pdf',
+        encoding: Encoding.Base64,
       });
 
-      await FileOpener.open({
-        filePath: fileUri.uri,
-        contentType: 'application/pdf',
-      });
+      alert('File uploaded successfully');
+      setFileUri(result.uri);  // Save the file URI to state
     } catch (error) {
-      console.error('Error opening PDF:', error);
-      alert('Failed to open PDF: ' + error.message);
+      console.error('Error uploading file:', error);
+      alert('Failed to upload file: ' + error.message);
     }
   };
+
+  const convertFileToBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      resolve(reader.result.split(',')[1]);
+    };
+    reader.readAsDataURL(file);
+  });
 
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Download My PDF</h1>
+        <h1>Upload and Open a File</h1>
         <div className="formdata">
           <form>
-            <button type="button" onClick={generatePDF}>
-              Print
-            </button>
-            {pdfGenerated && (
-              <button type="button" onClick={openPDF}>
-                Open PDF
-              </button>
-            )}
+            <input type="file" onChange={handleFileChange} />
           </form>
+          {fileUri && (
+            <div>
+              <h2>Uploaded File:</h2>
+              {/* Example: Display file URI */}
+              <p>{fileUri}</p>
+            </div>
+          )}
         </div>
       </header>
     </div>

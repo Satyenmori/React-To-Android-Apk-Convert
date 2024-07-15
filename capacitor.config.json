@@ -2,5 +2,17 @@
   "appId": "com.example.app",
   "appName": "apk-app",
   "webDir": "build",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "plugins": {
+    "Camera": {
+      "photo": {
+        "quality": 90
+      },
+      "camera": {
+        "androidCameraOptions": {
+          "promptLabelPhoto": "Choose a file"
+        }
+      }
+    }
+  }
 }
