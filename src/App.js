@@ -9,14 +9,18 @@ function App() {
 
   useEffect(() => {
     requestPermissions();
+    readXMLFromDownloads();
   }, []);
 
   const requestPermissions = async () => {
     if (Capacitor.isNativePlatform()) {
       try {
         const status = await Device.getInfo();
-        if (status.platform === 'android' && parseInt(status.osVersion.split('.')[0]) >= 10) {
-          // Add necessary permission request logic if needed
+        if (status.platform === "android") {
+          const result = await Filesystem.requestPermissions();
+          if (!result.publicStorage) {
+            alert("Permission denied!");
+          }
         }
       } catch (err) {
         console.warn(err);
@@ -24,31 +28,47 @@ function App() {
     }
   };
 
-  const openFilePicker = async () => {
+  const readXMLFromDownloads = async () => {
     try {
-      const fileInput = document.createElement('input');
-      fileInput.type = 'file';
-      fileInput.accept = '.xml'; // adjust file types if needed
-      fileInput.onchange = async (event) => {
-        const file = event.target.files[0];
-        const reader = new FileReader();
-        reader.onload = () => {
-          const parsedXML = parseXML(reader.result);
-          setFileContent(parsedXML);
-        };
-        reader.readAsText(file);
-      };
-      fileInput.click();
+      const fileName = "sample.xml"; // Replace with your actual file name
+      const result = await Filesystem.readFile({
+        path: `Download/${fileName}`,
+        directory: Directory.ExternalStorage, // or Directory.External if you are sure it's stored here
+        encoding: Encoding.UTF8,
+      });
+
+      // Logging the result to verify the content
+      console.log(result.data);
+
+      // Check if the data is valid and not empty
+      if (!result.data || result.data.trim() === "") {
+        throw new Error("File content is empty or cannot be read");
+      }
+
+      const parsedXML = parseXML(result.data);
+      setFileContent(parsedXML);
     } catch (error) {
-      console.error("Error opening file picker:", error);
+      console.error("Error reading file:", error);
+      alert("Error reading file: " + error.message);
     }
   };
 
   const parseXML = (xmlString) => {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-    const serializer = new XMLSerializer();
-    return serializer.serializeToString(xmlDoc);
+    try {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+
+      // Check if there was a parsing error
+      const parseError = xmlDoc.getElementsByTagName("parsererror");
+      if (parseError.length > 0) {
+        throw new Error(parseError[0].textContent);
+      }
+
+      return xmlDoc.documentElement.outerHTML;
+    } catch (error) {
+      console.error("Error parsing XML:", error);
+      return "Error parsing XML: " + error.message;
+    }
   };
 
   return (
@@ -56,7 +76,6 @@ function App() {
       <header className="App-header">
         <h1>Read File from Downloads</h1>
         <div className="formdata">
-          <button onClick={openFilePicker}>Read sample.xml</button>
           {fileContent && (
             <div>
               <h2>File Content:</h2>
