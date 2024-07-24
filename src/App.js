@@ -32,7 +32,7 @@ function App() {
     try {
       const fileName = "sample.xml"; // Replace with your actual file name
       const result = await Filesystem.readFile({
-        path: `Download/${fileName}`,
+        path: `WhatsApp/Media/WhatsApp Documents/${fileName}`,
         directory: Directory.ExternalStorage, // or Directory.External if you are sure it's stored here
         encoding: Encoding.UTF8,
       });
