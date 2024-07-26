@@ -31,22 +31,39 @@ function App() {
   const readXMLFromDownloads = async () => {
     try {
       const fileName = "sample.xml"; // Replace with your actual file name
-      const result = await Filesystem.readFile({
-        path: `WhatsApp/Media/WhatsApp Documents/${fileName}`,
-        directory: Directory.ExternalStorage, // or Directory.External if you are sure it's stored here
-        encoding: Encoding.UTF8,
-      });
+      const paths = [
+        `WhatsApp/Media/WhatsApp Documents/${fileName}`,
+        `Download/${fileName}`, 
+        `Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Documents/${fileName}`,
+      ];
 
-      // Logging the result to verify the content
-      console.log(result.data);
+      for (const path of paths) {
+        try {
+          const result = await Filesystem.readFile({
+            path: path,
+            directory: Directory.ExternalStorage, // or Directory.External if you are sure it's stored here
+            encoding: Encoding.UTF8,
+          });
 
-      // Check if the data is valid and not empty
-      if (!result.data || result.data.trim() === "") {
-        throw new Error("File content is empty or cannot be read");
+          // Logging the result to verify the content
+          console.log(result.data);
+
+          // Check if the data is valid and not empty
+          if (!result.data || result.data.trim() === "") {
+            throw new Error("File content is empty or cannot be read");
+          }
+
+          const parsedXML = parseXML(result.data);
+          setFileContent(parsedXML);
+          return; // Exit the loop once the file is successfully read
+        } catch (error) {
+          // Log the error for the current path and try the next path
+          console.error(`Error reading file from path ${path}:`, error);
+        }
       }
 
-      const parsedXML = parseXML(result.data);
-      setFileContent(parsedXML);
+      // If the loop completes without successfully reading the file
+      alert("Error: File could not be found in the specified paths.");
     } catch (error) {
       console.error("Error reading file:", error);
       alert("Error reading file: " + error.message);
