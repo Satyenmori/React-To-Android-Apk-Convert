@@ -1,69 +1,64 @@
-import React, { useState, useEffect } from "react";
-import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
-import { Device } from "@capacitor/device";
+import React, { useState } from "react";
+import { Filesystem, Encoding } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
 import "./App.css";
 
 function App() {
   const [fileContent, setFileContent] = useState(null);
 
-  useEffect(() => {
-    requestPermissions();
-    readXMLFromDownloads();
-  }, []);
-
-  const requestPermissions = async () => {
-    if (Capacitor.isNativePlatform()) {
-      try {
-        const status = await Device.getInfo();
-        if (status.platform === "android") {
-          const result = await Filesystem.requestPermissions();
-          if (!result.publicStorage) {
-            alert("Permission denied!");
-          }
+  const openFilePicker = async () => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const file = await pickFile();
+        if (file) {
+          readFileContent(file);
+        } else {
+          alert("No file selected.");
         }
-      } catch (err) {
-        console.warn(err);
+      } else {
+        alert("File picking not supported on this platform.");
       }
+    } catch (error) {
+      console.error("Error opening file picker:", error);
+      alert("Error opening file picker: " + error.message);
     }
   };
 
-  const readXMLFromDownloads = async () => {
-    try {
-      const fileName = "sample.xml"; // Replace with your actual file name
-      const paths = [
-        `WhatsApp/Media/WhatsApp Documents/${fileName}`,
-        `Download/${fileName}`, 
-        `Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Documents/${fileName}`,
-      ];
-
-      for (const path of paths) {
-        try {
-          const result = await Filesystem.readFile({
-            path: path,
-            directory: Directory.ExternalStorage, // or Directory.External if you are sure it's stored here
-            encoding: Encoding.UTF8,
-          });
-
-          // Logging the result to verify the content
-          console.log(result.data);
-
-          // Check if the data is valid and not empty
-          if (!result.data || result.data.trim() === "") {
-            throw new Error("File content is empty or cannot be read");
-          }
-
-          const parsedXML = parseXML(result.data);
-          setFileContent(parsedXML);
-          return; // Exit the loop once the file is successfully read
-        } catch (error) {
-          // Log the error for the current path and try the next path
-          console.error(`Error reading file from path ${path}:`, error);
+  const pickFile = () => {
+    return new Promise((resolve, reject) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/xml,text/xml,.xml";
+      input.onchange = async (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          console.log("Selected file:", file); // Debugging
+          const reader = new FileReader();
+          reader.onload = () => {
+            console.log("File content:", reader.result); // Debugging
+            resolve({
+              uri: file.name,
+              content: reader.result,
+            });
+          };
+          reader.onerror = (err) => reject(err);
+          reader.readAsText(file);
+        } else {
+          reject(new Error("No file selected"));
         }
-      }
+      };
+      input.click();
+    });
+  };
 
-      // If the loop completes without successfully reading the file
-      alert("Error: File could not be found in the specified paths.");
+  const readFileContent = async (file) => {
+    try {
+      if (file && file.content) {
+        const parsedXML = parseXML(file.content);
+        setFileContent(parsedXML);
+      } else {
+        throw new Error("File content is empty or cannot be read");
+      }
     } catch (error) {
       console.error("Error reading file:", error);
       alert("Error reading file: " + error.message);
@@ -74,13 +69,9 @@ function App() {
     try {
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-
-      // Check if there was a parsing error
-      const parseError = xmlDoc.getElementsByTagName("parsererror");
-      if (parseError.length > 0) {
-        throw new Error(parseError[0].textContent);
+      if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+        throw new Error("Error parsing XML");
       }
-
       return xmlDoc.documentElement.outerHTML;
     } catch (error) {
       console.error("Error parsing XML:", error);
@@ -92,6 +83,7 @@ function App() {
     <div className="App">
       <header className="App-header">
         <h1>Read File from Downloads</h1>
+        <button onClick={openFilePicker}>Select XML File</button>
         <div className="formdata">
           {fileContent && (
             <div>
