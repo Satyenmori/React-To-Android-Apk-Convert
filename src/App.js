@@ -1,10 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Filesystem, Encoding } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
+import { Storage } from "@capacitor/storage";
 import "./App.css";
 
 function App() {
   const [fileContent, setFileContent] = useState(null);
+
+  useEffect(() => {
+    // Retrieve saved file content from storage on component mount
+    const loadFileContent = async () => {
+      try {
+        const { value } = await Storage.get({ key: 'fileContent' });
+        if (value) {
+          setFileContent(value);
+        }
+      } catch (error) {
+        console.error("Error loading file content:", error);
+      }
+    };
+    loadFileContent();
+  }, []);
 
   const openFilePicker = async () => {
     try {
@@ -56,6 +72,12 @@ function App() {
       if (file && file.content) {
         const parsedXML = parseXML(file.content);
         setFileContent(parsedXML);
+
+        // Save file content to storage
+        await Storage.set({
+          key: 'fileContent',
+          value: parsedXML,
+        });
       } else {
         throw new Error("File content is empty or cannot be read");
       }
