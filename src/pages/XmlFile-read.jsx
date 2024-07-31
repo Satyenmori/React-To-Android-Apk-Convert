@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Filesystem, Encoding } from "@capacitor/filesystem";
-import { Capacitor } from "@capacitor/core";
 import { Storage } from "@capacitor/storage";
 import "../App.css";
 
@@ -8,7 +6,6 @@ function XmlFileRead() {
   const [fileContent, setFileContent] = useState(null);
 
   useEffect(() => {
-    // Retrieve saved file content from storage on component mount
     const loadFileContent = async () => {
       try {
         const { value } = await Storage.get({ key: 'fileContent' });
@@ -24,15 +21,11 @@ function XmlFileRead() {
 
   const openFilePicker = async () => {
     try {
-      if (Capacitor.isNativePlatform()) {
-        const file = await pickFile();
-        if (file) {
-          readFileContent(file);
-        } else {
-          alert("No file selected.");
-        }
+      const file = await pickFile();
+      if (file) {
+        readFileContent(file);
       } else {
-        alert("File picking not supported on this platform.");
+        alert("No file selected.");
       }
     } catch (error) {
       console.error("Error opening file picker:", error);
@@ -48,10 +41,8 @@ function XmlFileRead() {
       input.onchange = async (event) => {
         const file = event.target.files[0];
         if (file) {
-          console.log("Selected file:", file); // Debugging
           const reader = new FileReader();
           reader.onload = () => {
-            console.log("File content:", reader.result); // Debugging
             resolve({
               uri: file.name,
               content: reader.result,
@@ -70,34 +61,14 @@ function XmlFileRead() {
   const readFileContent = async (file) => {
     try {
       if (file && file.content) {
-        const parsedXML = parseXML(file.content);
-        setFileContent(parsedXML);
-
-        // Save file content to storage
-        await Storage.set({
-          key: 'fileContent',
-          value: parsedXML,
-        });
+        setFileContent(file.content);
+        await Storage.set({ key: 'fileContent', value: file.content });
       } else {
         throw new Error("File content is empty or cannot be read");
       }
     } catch (error) {
       console.error("Error reading file:", error);
       alert("Error reading file: " + error.message);
-    }
-  };
-
-  const parseXML = (xmlString) => {
-    try {
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-      if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
-        throw new Error("Error parsing XML");
-      }
-      return xmlDoc.documentElement.outerHTML;
-    } catch (error) {
-      console.error("Error parsing XML:", error);
-      return "Error parsing XML: " + error.message;
     }
   };
 
