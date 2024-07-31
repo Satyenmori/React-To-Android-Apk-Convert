@@ -10,7 +10,7 @@ function Navbar() {
           <Link to="/">XML-READ</Link>
         </li>
         <li>
-          <Link to="/json">XML TO JSON</Link>
+          <Link to="/json">Convert JSON</Link>
         </li>
       </ul>
     </nav>

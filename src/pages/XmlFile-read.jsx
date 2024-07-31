@@ -8,7 +8,7 @@ function XmlFileRead() {
   useEffect(() => {
     const loadFileContent = async () => {
       try {
-        const { value } = await Storage.get({ key: 'fileContent' });
+        const { value } = await Storage.get({ key: 'SrData' });
         if (value) {
           setFileContent(value);
         }
@@ -62,7 +62,7 @@ function XmlFileRead() {
     try {
       if (file && file.content) {
         setFileContent(file.content);
-        await Storage.set({ key: 'fileContent', value: file.content });
+        await Storage.set({ key: 'SrData', value: file.content });
       } else {
         throw new Error("File content is empty or cannot be read");
       }

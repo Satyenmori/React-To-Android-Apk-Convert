@@ -6,12 +6,13 @@
   height: 40vmin;
   pointer-events: none;
 }
-button{
+
+button {
   width: 300px;
   padding: 20px;
   margin-top: 15px;
   border-radius: 10px;
-  background-color: #FFD700;
+  background-color: #ffd700;
   font-size: 25px;
   color: white;
   cursor: pointer;
@@ -47,12 +48,13 @@ button{
   }
 }
 
-
-
 /* Navbar css */
 .navbar {
   background-color: #333;
   padding: 1rem;
+  position: sticky;
+  top: 0;
+  width: 100%;
 }
 
 .navbar ul {
@@ -77,4 +79,62 @@ button{
 
 .navbar a:hover {
   background-color: #555;
+}
+
+/* new Layout */
+.container {
+  width: 100%;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.App-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.content {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+.left-side,
+.right-side {
+  width: 100%;
+  max-width: 500px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background-color: #c39090;
+  margin: 10px 0;
+  box-sizing: border-box;
+}
+
+.left-side pre,
+.right-side pre {
+  text-align: left;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .content {
+    flex-direction: column-reverse;
+    align-items: center;
+  }
+
+  .left-side,
+  .right-side {
+    width: 100%;
+  }
+  .container {
+    width: 100%;
+    margin: 0 20px;
+  }
 }
