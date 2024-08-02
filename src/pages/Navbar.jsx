@@ -12,6 +12,7 @@ import {
 } from "react-icons/md";
 import { FiFileText } from "react-icons/fi";
 import Sales from "./Salespage";
+import Sample from "./Sample";
 
 function Navbar() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -44,6 +45,12 @@ function Navbar() {
             </Link>
           </li>
           <li>
+            <Link to="/sample">
+              <FaExchangeAlt />
+              {isExpanded && " Sample"}
+            </Link>
+          </li>
+          <li>
             <Link to="/json">
               <FaExchangeAlt />
               {isExpanded && " Convert JSON"}
@@ -56,6 +63,8 @@ function Navbar() {
           <Route path="/" element={<XmlFileRead />} />
           <Route path="/json" element={<XmlTojson />} />
           <Route path="/sales" element={<Sales />} />
+          <Route path="/sample" element={<Sample />} />
+
         </Routes>
       </div>
     </div>

@@ -130,7 +130,11 @@ const Sales = () => {
           <span className="grand-total-value">{getGrandTotal()}</span>
         </div>
 
-        <button type="submit">Submit</button>
+        <div className="btn-group">
+          <button type="submit">Submit</button>
+          <button>Print</button>
+        </div>
+        
       </form>
     </div>
   );

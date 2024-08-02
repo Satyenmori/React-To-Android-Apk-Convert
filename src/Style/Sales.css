@@ -116,18 +116,25 @@ body {
 .sales-form .grand-total-container .grand-total-value {
   margin-left: 10px;
 }
-
+.btn-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 .sales-form button {
-  background-color: #007bff;
+  background-color: gray;
   color: #fff;
   border: none;
   padding: 10px;
   border-radius: 10px;
   cursor: pointer;
+  width: 48%;
+  font-size: 1em;
+  font-weight: 700;
 }
 
 .sales-form button:hover {
-  background-color: #0056b3;
+  background-color: #ffcb6b;
 }
 
 .sales-form .entry-group {
@@ -138,5 +145,5 @@ body {
 }
 
 .two-icone {
-  margin-left: 260px;
+  padding-inline-start: 40px;
 }
