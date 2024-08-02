@@ -46,12 +46,7 @@ body {
 }
 
 .sales-form .inline-group > div {
-  width: 45%;
-}
-
-.sales-form .inline-group input,
-.sales-form .inline-group select {
-  width: 100%;
+  width: 48%; /* Adjusted to fit both fields comfortably */
 }
 
 .sales-form .subtotal-container {
@@ -68,8 +63,8 @@ body {
   font-size: 1em;
 }
 
-.sales-form .subtotal-container .subtotal-value {
-  margin-left: 10px;
+.subtotal-value {
+  margin-left: 5px;
 }
 
 .sales-form .subtotal-icon-container {
@@ -85,18 +80,41 @@ body {
 
 .sales-form .subtotal-icon {
   font-size: 1.2em;
+  color: red;
+  cursor: pointer;
 }
 
 .sales-form .add-entry-container {
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   margin-bottom: 15px;
 }
 
 .sales-form .add-icon {
   font-size: 1.5em;
-  color: green;
+  color: white;
   cursor: pointer;
+  background-color: green;
+}
+
+.sales-form .grand-total-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.sales-form .grand-total-container label,
+.sales-form .grand-total-container .grand-total-value {
+  font-size: 1em;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.sales-form .grand-total-container .grand-total-value {
+  margin-left: 10px;
 }
 
 .sales-form button {
@@ -110,4 +128,15 @@ body {
 
 .sales-form button:hover {
   background-color: #0056b3;
+}
+
+.sales-form .entry-group {
+  background-color: rgb(236, 229, 229);
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.two-icone {
+  margin-left: 260px;
 }
