@@ -1,0 +1,113 @@
+/* Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  width: 100%;
+  max-width: 392px; /* Mobile width */
+  margin: 0 auto;
+  padding: 10px;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.sales-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.sales-form label {
+  margin-bottom: 5px;
+}
+
+.sales-form input,
+.sales-form select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.sales-form .inline-group {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.sales-form .inline-group > div {
+  width: 45%;
+}
+
+.sales-form .inline-group input,
+.sales-form .inline-group select {
+  width: 100%;
+}
+
+.sales-form .subtotal-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.sales-form .subtotal-container label,
+.sales-form .subtotal-container .subtotal-value {
+  font-weight: bold;
+  color: #333;
+  font-size: 1em;
+}
+
+.sales-form .subtotal-container .subtotal-value {
+  margin-left: 10px;
+}
+
+.sales-form .subtotal-icon-container {
+  background-color: white;
+  color: red;
+  padding: 5px 10px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.sales-form .subtotal-icon {
+  font-size: 1.2em;
+}
+
+.sales-form .add-entry-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.sales-form .add-icon {
+  font-size: 1.5em;
+  color: green;
+  cursor: pointer;
+}
+
+.sales-form button {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.sales-form button:hover {
+  background-color: #0056b3;
+}
