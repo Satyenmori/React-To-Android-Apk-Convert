@@ -17,5 +17,8 @@ project(':capacitor-filesystem').projectDir = new File('../node_modules/@capacit
 include ':capacitor-storage'
 project(':capacitor-storage').projectDir = new File('../node_modules/@capacitor/storage/android')
 
+include ':capacitor-blob-writer'
+project(':capacitor-blob-writer').projectDir = new File('../node_modules/capacitor-blob-writer/android')
+
 include ':capacitor-file-picker'
 project(':capacitor-file-picker').projectDir = new File('../node_modules/capacitor-file-picker/android')
