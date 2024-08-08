@@ -6,8 +6,16 @@
   height: 40vmin;
   pointer-events: none;
 }
+.header{
+  position: absolute;
+  left: 40%;
+}
+.text-align{
+  text-align: center;
+  width: 100%;
+}
 button{
-  width: 300px;
+  /* width: 200px; */
   padding: 20px;
   margin-top: 15px;
   border-radius: 10px;
