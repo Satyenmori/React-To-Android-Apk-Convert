@@ -223,6 +223,10 @@ const Sales = () => {
     createXML(sales);
   };
 
+  const ShowAddIcon = () => {
+    const lastEntry = entries[entries.length - 1];
+    return lastEntry.subtotal && parseFloat(lastEntry.subtotal) > 0;
+  };
   return (
     <div className="container">
       <h1 className="title">Sales Form</h1>
@@ -242,16 +246,6 @@ const Sales = () => {
             <div className="entry-fields">
               <div className="field-group">
                 <label htmlFor={`product-${index}`}>Product:</label>
-                <span className="two-icone">
-                  {index === 0 ? (
-                    <FaPlus className="add-icon" onClick={addEntry} />
-                  ) : (
-                    <FaTrashAlt
-                      className="subtotal-icon"
-                      onClick={() => removeEntry(index)}
-                    />
-                  )}
-                </span>
                 <select
                   id={`product-${index}`}
                   name={`product-${index}`}
@@ -297,17 +291,23 @@ const Sales = () => {
                 <span className="subtotal-value">{entry.subtotal}</span>
               </div>
             </div>
+            {index !== 0 && (
+              <FaTrashAlt
+                className="subtotal-icon"
+                onClick={() => removeEntry(index)}
+              />
+            )}
           </div>
         ))}
-
+        {ShowAddIcon() && <FaPlus className="add-icon" onClick={addEntry} />}
         <div className="grand-total-container">
           <label htmlFor="grand-total">Grand Total:</label>
           <span className="grand-total-value">{getGrandTotal()}</span>
         </div>
 
         <div className="btn-group">
-          <button type="submit">Submit</button>
-          <button type="button">Print</button>
+          <button class="button-17" type="submit" role="button">Submit</button>
+          <button class="button-17" type="button" role="button">Print</button>
         </div>
       </form>
     </div>
@@ -315,3 +315,7 @@ const Sales = () => {
 };
 
 export default Sales;
+
+
+
+

@@ -6,19 +6,28 @@
 }
 
 body {
-  font-family: Arial, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f7f8fc;
+  color: #333;
 }
 
 .container {
   width: 100%;
-  max-width: 392px; /* Mobile width */
-  margin: 0 auto;
-  padding: 10px;
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
 }
 
 .title {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
+  font-size: 2em;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .sales-form {
@@ -27,7 +36,8 @@ body {
 }
 
 .sales-form label {
-  margin-bottom: 5px;
+  margin-right: 5px;
+  font-weight: 600;
 }
 
 .sales-form input,
@@ -35,8 +45,14 @@ body {
   width: 100%;
   padding: 10px;
   margin-bottom: 15px;
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
   border-radius: 4px;
+  transition: border-color 0.3s ease;
+}
+
+.sales-form input:focus,
+.sales-form select:focus {
+  border-color: #007bff;
 }
 
 .sales-form .inline-group {
@@ -44,9 +60,29 @@ body {
   justify-content: space-between;
   margin-bottom: 15px;
 }
-
 .sales-form .inline-group > div {
-  width: 48%; /* Adjusted to fit both fields comfortably */
+  width: 48%;
+}
+@media (max-width: 800px) {
+  .sales-form .inline-group {
+    flex-direction: column;
+  }
+  .sales-form .inline-group > div {
+    width: 100%;
+  }
+  /* .btn-group {
+    flex-direction: column;
+    gap: 20px;
+  } */
+}
+
+.sales-form .entry-group {
+  background-color: #f9f9f9;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  position: relative;
 }
 
 .sales-form .subtotal-container {
@@ -56,45 +92,16 @@ body {
   margin-bottom: 15px;
 }
 
-.sales-form .subtotal-container label,
-.sales-form .subtotal-container .subtotal-value {
-  font-weight: bold;
-  color: #333;
-  font-size: 1em;
-}
-
 .subtotal-value {
   margin-left: 5px;
+  font-weight: 700;
 }
 
-.sales-form .subtotal-icon-container {
-  background-color: white;
-  color: red;
-  padding: 5px 10px;
-  border-radius: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.sales-form .subtotal-icon {
-  font-size: 1.2em;
-  color: red;
-  cursor: pointer;
-}
-
-.sales-form .add-entry-container {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 15px;
-}
-
+.sales-form .subtotal-icon-container,
 .sales-form .add-icon {
   font-size: 1.5em;
-  color: white;
+  color: #007bff;
   cursor: pointer;
-  background-color: green;
 }
 
 .sales-form .grand-total-container {
@@ -104,46 +111,124 @@ body {
   margin-top: 20px;
   margin-bottom: 10px;
   font-weight: bold;
+  font-size: 1.2em;
+  color: #555;
 }
 
-.sales-form .grand-total-container label,
-.sales-form .grand-total-container .grand-total-value {
-  font-size: 1em;
-  color: #333;
-  margin-bottom: 10px;
-}
-
-.sales-form .grand-total-container .grand-total-value {
-  margin-left: 10px;
-}
 .btn-group {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  margin-top: 20px;
 }
+
 .sales-form button {
-  background-color: gray;
-  color: #fff;
-  border: none;
-  padding: 10px;
-  border-radius: 10px;
+  /* background-color: #007bff; */
+  /* color: #fff; */
+  /* border: none; */
+  /* padding: 12px; */
+  /* border-radius: 5px; */
   cursor: pointer;
   width: 48%;
   font-size: 1em;
   font-weight: 700;
-}
-
-.sales-form button:hover {
-  background-color: #ffcb6b;
-}
-
-.sales-form .entry-group {
-  background-color: rgb(236, 229, 229);
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 10px;
+  /* transition: background-color 0.3s ease; */
 }
 
 .two-icone {
-  padding-inline-start: 40px;
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+}
+.sales-form .add-icon {
+  font-size: 1.5em;
+  color: green;
+  cursor: pointer;
+  margin: 5px auto 5px;
+  display: block;
+}
+.subtotal-icon {
+  font-size: 1.5em;
+  color: red;
+  cursor: pointer;
+  margin-left: auto;
+  display: block;
+}
+
+/* Button CSS */
+.button-17 {
+  align-items: center;
+  appearance: none;
+  background-color: #fff;
+  border-radius: 24px;
+  border-style: none;
+  box-shadow: rgba(0, 0, 0, 0.2) 0 3px 5px -1px,
+    rgba(0, 0, 0, 0.14) 0 6px 10px 0, rgba(0, 0, 0, 0.12) 0 1px 18px 0;
+  box-sizing: border-box;
+  color: #3c4043;
+  cursor: pointer;
+  display: inline-flex;
+  fill: currentcolor;
+  font-family: "Google Sans", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  height: 48px;
+  justify-content: center;
+  letter-spacing: 0.25px;
+  line-height: normal;
+  max-width: 100%;
+  overflow: visible;
+  padding: 2px 24px;
+  position: relative;
+  text-align: center;
+  text-transform: none;
+  transition: box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 15ms linear 30ms, transform 270ms cubic-bezier(0, 0, 0.2, 1) 0ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: auto;
+  will-change: transform, opacity;
+  z-index: 0;
+}
+
+.button-17:hover {
+  background: #f6f9fe;
+  color: #174ea6;
+}
+
+.button-17:active {
+  box-shadow: 0 4px 4px 0 rgb(60 64 67 / 30%),
+    0 8px 12px 6px rgb(60 64 67 / 15%);
+  outline: none;
+}
+
+.button-17:focus {
+  outline: none;
+  border: 2px solid #4285f4;
+}
+
+.button-17:not(:disabled) {
+  box-shadow: rgba(60, 64, 67, 0.3) 0 1px 3px 0,
+    rgba(60, 64, 67, 0.15) 0 4px 8px 3px;
+}
+
+.button-17:not(:disabled):hover {
+  box-shadow: rgba(60, 64, 67, 0.3) 0 2px 3px 0,
+    rgba(60, 64, 67, 0.15) 0 6px 10px 4px;
+}
+
+.button-17:not(:disabled):focus {
+  box-shadow: rgba(60, 64, 67, 0.3) 0 1px 3px 0,
+    rgba(60, 64, 67, 0.15) 0 4px 8px 3px;
+}
+
+.button-17:not(:disabled):active {
+  box-shadow: rgba(60, 64, 67, 0.3) 0 4px 4px 0,
+    rgba(60, 64, 67, 0.15) 0 8px 12px 6px;
+}
+
+.button-17:disabled {
+  box-shadow: rgba(60, 64, 67, 0.3) 0 1px 3px 0,
+    rgba(60, 64, 67, 0.15) 0 4px 8px 3px;
 }
