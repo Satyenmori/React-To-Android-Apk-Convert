@@ -15,9 +15,9 @@ const XmlTojson = () => {
         if (value) {
           setFileContent(value);
           const parser = new XMLParser({
-          ignoreAttributes: false,
-          ignoreTextNodeAttr: true
-        });
+            ignoreAttributes: false,
+            ignoreTextNodeAttr: true,
+          });
           const json = parser.parse(value);
           setJsonContent(json);
           console.log("Json Data", json);
@@ -34,7 +34,7 @@ const XmlTojson = () => {
   // Filter LEDGER entries
   const ledgerEntries =
     jsonContent?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE?.filter(
-      (entry) => entry.LEDGER
+      (entry) => entry.VOUCHER
     );
 
   return (
@@ -53,17 +53,18 @@ const XmlTojson = () => {
             </div>
             <div className="right-side">
               <h2 style={{ color: "black", textAlign: "center" }}>
-                LEDGER DATA
+                VOUCHER DATA
               </h2>
               <hr />
               {ledgerEntries?.length > 0 ? (
                 ledgerEntries.map((entry, index) => (
                   <div key={index}>
-                    <p>Parent: {entry.LEDGER.PARENT}</p>
-                    <p>Currency Name: {entry.LEDGER.CURRENCYNAME}</p>
-                    <p>Dealer Type: {entry.LEDGER.VATDEALERTYPE}</p>
+                    <p>Voucher Date: {entry.VOUCHER.DATE}</p>
+                    <p>Item Name: {entry.VOUCHER.ITEMNAME}</p>
+                    <p>Quantity: {entry.VOUCHER.QUANTITY}</p>
+                    <p>Rate: {entry.VOUCHER.RATE}</p>
+                    <p>Total Amounts: {entry.VOUCHER.AMOUNT}</p>
 
-                    <p>GUID: {entry.LEDGER.GUID}</p>
                     <hr />
                     {/* Add more fields as needed */}
                   </div>

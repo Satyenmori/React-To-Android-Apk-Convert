@@ -1,0 +1,65 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .table-responsive {
+    overflow-x: auto;
+  }
+  
+  .voucher-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 1rem;
+    text-align: left;
+  }
+  
+  .voucher-table thead {
+    background-color: #4CAF50;
+    color: white;
+  }
+  
+  .voucher-table th,
+  .voucher-table td {
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+  }
+  
+  .voucher-table tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+  
+  .voucher-table tbody tr:hover {
+    background-color: #f1f1f1;
+  }
+  
+  .edit-btn, .delete-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    margin-right: 5px;
+  }
+  
+  .edit-btn:hover, .delete-btn:hover {
+    background-color: #45a049;
+  }
+  
+  .delete-btn {
+    background-color: #f44336;
+  }
+  
+  .delete-btn:hover {
+    background-color: #d32f2f;
+  }
+  
+  @media (max-width: 768px) {
+    .voucher-table th, .voucher-table td {
+      font-size: 0.9rem;
+      padding: 8px 10px;
+    }
+  }
+  

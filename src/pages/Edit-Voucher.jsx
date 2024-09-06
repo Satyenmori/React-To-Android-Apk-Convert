@@ -1,90 +1,50 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Storage } from "@capacitor/storage";
+import { XMLParser } from "fast-xml-parser";
+import "../Style/Jsonpage.css";
 import "../Style/Sales.css";
 import { FaPlus, FaTrashAlt } from "react-icons/fa";
 import { saveAs } from "file-saver";
-import { create } from "xmlbuilder2";
-import { Storage } from "@capacitor/storage";
-const Sales = () => {
+
+const EditVoucher = () => {
+  const [fileContent, setFileContent] = useState(null);
+  const [jsonContent, setJsonContent] = useState(null);
   const [entries, setEntries] = useState([
     { product: "", price: "", quantity: "", subtotal: "" },
   ]);
 
-  const createXML = async (sales) => {
-    // Retrieve existing XML from Capacitor Storage or initialize new XML
-    let existingXML;
-    try {
-      const { value } = await Storage.get({ key: "salesXML" });
-      if (value) {
-        existingXML = new DOMParser().parseFromString(value, "application/xml");
-      } else {
-        existingXML = new DOMParser().parseFromString(
-          `
-          <ENVELOPE>
-            <HEADER>
-              <TALLYREQUEST>Import Data</TALLYREQUEST>
-            </HEADER>
-            <BODY>
-              <IMPORTDATA>
-                <REQUESTDESC>
-                  <REPORTNAME>All Masters</REPORTNAME>
-                  <STATICVARIABLES>
-                    <SVCURRENTCOMPANY>My Company</SVCURRENTCOMPANY>
-                  </STATICVARIABLES>
-                </REQUESTDESC>
-                <REQUESTDATA></REQUESTDATA>
-              </IMPORTDATA>
-            </BODY>
-          </ENVELOPE>
-        `,
-          "application/xml"
-        );
+  useEffect(() => {
+    const loadFileContent = async () => {
+      try {
+        const { value } = await Storage.get({ key: "File1" });
+
+        if (value) {
+          setFileContent(value);
+          const parser = new XMLParser({
+            ignoreAttributes: false,
+            ignoreTextNodeAttr: true,
+          });
+          const json = parser.parse(value);
+          setJsonContent(json);
+          console.log("Json Data", json);
+        } else {
+          alert("No content found.");
+        }
+      } catch (error) {
+        console.error("Error loading file content:", error);
       }
+    };
+    loadFileContent();
+  }, []);
 
-      const requestData = existingXML.querySelector("REQUESTDATA");
+  // Filter Voucher entries
+  const ledgerEntries =
+    jsonContent?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE?.filter(
+      (entry) => entry.VOUCHER
+    );
 
-      sales.forEach((sale) => {
-        const tallyMessage = existingXML.createElement("TALLYMESSAGE");
-        tallyMessage.setAttribute("xmlns:UDF", "TallyUDF");
-
-        const voucher = existingXML.createElement("VOUCHER");
-        voucher.innerHTML = `
-          <DATE>${sale.date}</DATE>
-          <GUID>12345678</GUID>
-          <GSTREGISTRATIONTYPE>Regular</GSTREGISTRATIONTYPE>
-          <GSTNATUREOFSALE>Inter State</GSTNATUREOFSALE>
-          <GSTPARTYTYPE>Regular</GSTPARTYTYPE>
-          <UDF:GSTRETURNTYPE>Regular</UDF:GSTRETURNTYPE>
-          <UDF:CONSULIEERGOODS>No</UDF:CONSULIEERGOODS>
-          <VCHENTRYMODE>Item Invoice</VCHENTRYMODE>
-          <ITEMNAME>${sale.product}</ITEMNAME>
-          <CATEGORYNAME>Sales</CATEGORYNAME>
-          <GSTCLASS>Regular</GSTCLASS>
-          <GSTEXEMPT>No</GSTEXEMPT>
-          <BATCHNAME>${sale.product}-2024</BATCHNAME>
-          <EXPIRYPERIOD>Default</EXPIRYPERIOD>
-          <QUANTITY>${sale.quantity}</QUANTITY>
-          <RATE>${sale.price}</RATE>
-          <AMOUNT>${sale.subtotal}</AMOUNT>
-          <!-- Add other elements as needed -->
-        `;
-
-        tallyMessage.appendChild(voucher);
-        requestData.appendChild(tallyMessage);
-      });
-
-      const updatedXML = new XMLSerializer().serializeToString(existingXML);
-
-      await Storage.set({
-        key: "salesXML",
-        value: updatedXML,
-      });
-      alert("Sales data saved as XML to Capacitor Storage!");
-    } catch (error) {
-      console.error("Error saving sales data:", error);
-    }
-  };
-
-  const handleProductChange = (index, value) => {
+   // edit-Voucher Logic
+   const handleProductChange = (index, value) => {
     const newEntries = [...entries];
     newEntries[index].product = value;
     setEntries(newEntries);
@@ -138,26 +98,29 @@ const Sales = () => {
     }));
 
     // Create XML for each sales entry
-    createXML(sales);
+    // createXML(sales);
   };
   const ShowAddIcon = () => {
     const lastEntry = entries[entries.length - 1];
     return lastEntry.subtotal && parseFloat(lastEntry.subtotal) > 0;
   };
 
-  const handlePrint = async () => {
-    const { value: xmlData } = await Storage.get({ key: "salesXML" });
+  const handlePrint = () => {
+    const xmlData = localStorage.getItem("salesXML");
     if (xmlData) {
       const blob = new Blob([xmlData], { type: "application/xml" });
-
-      saveAs(blob, "File1.xml");
+      saveAs(blob, "sales_data.xml");
     } else {
       alert("No sales data available to print.");
     }
   };
-
+ 
   return (
     <div className="container">
+      <div className="content">
+        {fileContent ? (
+          <>
+            <div className="container">
       <h1 className="title">Sales Form</h1>
       <form className="sales-form" onSubmit={handleSubmit}>
         <label htmlFor="date">Date:</label>
@@ -236,7 +199,7 @@ const Sales = () => {
 
         <div className="btn-group">
           <button class="button-17" type="submit" role="button">
-            Submit
+            Edit
           </button>
           <button
             class="button-17"
@@ -249,7 +212,13 @@ const Sales = () => {
         </div>
       </form>
     </div>
+          </>
+        ) : (
+          <p>No file content available.</p>
+        )}
+      </div>
+    </div>
   );
 };
 
-export default Sales;
+export default EditVoucher;
