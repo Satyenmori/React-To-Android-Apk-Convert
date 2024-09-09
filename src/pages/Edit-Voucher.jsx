@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Storage } from "@capacitor/storage";
 import { XMLParser, XMLBuilder } from "fast-xml-parser";
+import "../Style/Sales.css";
 
 const EditVoucher = () => {
   const { guid } = useParams();
@@ -17,9 +18,10 @@ const EditVoucher = () => {
           ignoreTextNodeAttr: true,
         });
         const json = parser.parse(value);
-        const voucher = json?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE?.find(
-          (entry) => entry.VOUCHER.GUID === guid
-        );
+        const voucher =
+          json?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE?.find(
+            (entry) => entry.VOUCHER.GUID === guid
+          );
         setVoucherData(voucher?.VOUCHER || null);
       }
     };
@@ -61,53 +63,54 @@ const EditVoucher = () => {
 
   return (
     <div className="container">
+      <h1 className="title">Edit Voucher</h1>
       {voucherData ? (
-        <form>
-          <h2>Edit Voucher</h2>
-          <div>
-            <label>Date:</label>
-            <input
-              type="date"
-              value={voucherData.DATE}
-              onChange={(e) => handleInputChange("DATE", e.target.value)}
-            />
-          </div>
-          <div>
-            <label>Item Name:</label>
-            <input
-              type="text"
-              value={voucherData.ITEMNAME}
-              onChange={(e) => handleInputChange("ITEMNAME", e.target.value)}
-            />
-          </div>
-          <div>
-            <label>Quantity:</label>
-            <input
-              type="number"
-              value={voucherData.QUANTITY}
-              onChange={(e) => handleInputChange("QUANTITY", e.target.value)}
-            />
-          </div>
-          <div>
-            <label>Rate:</label>
-            <input
-              type="number"
-              value={voucherData.RATE}
-              onChange={(e) => handleInputChange("RATE", e.target.value)}
-            />
-          </div>
-          <div>
-            <label>Amount:</label>
-            <input
-              type="number"
-              value={voucherData.AMOUNT}
-              onChange={(e) => handleInputChange("AMOUNT", e.target.value)}
-            />
-          </div>
+        <form className="sales-form">
+          <label>Date:</label>
+          <input
+            type="date"
+            value={voucherData.DATE}
+            onChange={(e) => handleInputChange("DATE", e.target.value)}
+          />
 
-          <button type="button" onClick={handleSave}>
-            Save Changes
-          </button>
+          <label>Item Name:</label>
+          <input
+            type="text"
+            value={voucherData.ITEMNAME}
+            onChange={(e) => handleInputChange("ITEMNAME", e.target.value)}
+          />
+
+          <label>Quantity:</label>
+          <input
+            type="number"
+            value={voucherData.QUANTITY}
+            onChange={(e) => handleInputChange("QUANTITY", e.target.value)}
+          />
+
+          <label>Rate:</label>
+          <input
+            type="number"
+            value={voucherData.RATE}
+            onChange={(e) => handleInputChange("RATE", e.target.value)}
+          />
+
+          <label>Amount:</label>
+          <input
+            type="number"
+            value={voucherData.AMOUNT}
+            onChange={(e) => handleInputChange("AMOUNT", e.target.value)}
+          />
+
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <button
+              className="button-17"
+              type="button"
+              role="button"
+              onClick={handleSave}
+            >
+              Save Changes
+            </button>
+          </div>
         </form>
       ) : (
         <p>Loading voucher data...</p>

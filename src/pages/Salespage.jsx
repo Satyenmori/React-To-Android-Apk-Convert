@@ -48,9 +48,10 @@ const Sales = () => {
         tallyMessage.setAttribute("xmlns:UDF", "TallyUDF");
 
         const voucher = existingXML.createElement("VOUCHER");
+        const uniqueGUID = crypto.randomUUID();
         voucher.innerHTML = `
           <DATE>${sale.date}</DATE>
-          <GUID>12345678</GUID>
+          <GUID>${uniqueGUID}</GUID>
           <GSTREGISTRATIONTYPE>Regular</GSTREGISTRATIONTYPE>
           <GSTNATUREOFSALE>Inter State</GSTNATUREOFSALE>
           <GSTPARTYTYPE>Regular</GSTPARTYTYPE>
@@ -237,7 +238,7 @@ const Sales = () => {
         </div>
 
         <div className="btn-group">
-          <button class="button-17" type="submit" role="button">
+          <button className="button-17" type="submit" role="button">
             Submit
           </button>
           <button
