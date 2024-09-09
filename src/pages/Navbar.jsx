@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { Link, Route, Routes } from "react-router-dom";
-import { FaFileImport, FaExchangeAlt, FaBars, FaFilePdf, FaEdit } from "react-icons/fa"; // Import Font Awesome icons
+import {
+  FaFileImport,
+  FaExchangeAlt,
+  FaBars,
+  FaFilePdf,
+  FaEdit,
+} from "react-icons/fa"; // Import Font Awesome icons
 import "../Style/Navbar.css";
 import XmlFileRead from "./ImportPage";
 import XmlTojson from "./XmlToJson";
@@ -35,7 +41,7 @@ function Navbar() {
           </li>
           <li>
             <Link to="/voucher">
-              <AiOutlineBarChart/>
+              <AiOutlineBarChart />
               {isExpanded && " Voucher"}
             </Link>
           </li>
@@ -44,7 +50,7 @@ function Navbar() {
               <FaFilePdf />
               {isExpanded && " SALES"}
             </Link>
-          </li>         
+          </li>
           <li>
             <Link to="/json">
               <FaExchangeAlt />
@@ -59,8 +65,7 @@ function Navbar() {
           <Route path="/json" element={<XmlTojson />} />
           <Route path="/sales" element={<Sales />} />
           <Route path="/voucher" element={<Voucher />} />
-          <Route path="/edit" element={<EditVoucher />} />
-
+          <Route path="/edit/:guid" element={<EditVoucher />} />
         </Routes>
       </div>
     </div>

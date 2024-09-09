@@ -1,222 +1,117 @@
 import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Storage } from "@capacitor/storage";
-import { XMLParser } from "fast-xml-parser";
-import "../Style/Jsonpage.css";
-import "../Style/Sales.css";
-import { FaPlus, FaTrashAlt } from "react-icons/fa";
-import { saveAs } from "file-saver";
+import { XMLParser, XMLBuilder } from "fast-xml-parser";
 
 const EditVoucher = () => {
-  const [fileContent, setFileContent] = useState(null);
-  const [jsonContent, setJsonContent] = useState(null);
-  const [entries, setEntries] = useState([
-    { product: "", price: "", quantity: "", subtotal: "" },
-  ]);
+  const { guid } = useParams();
+  const [voucherData, setVoucherData] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const loadFileContent = async () => {
-      try {
-        const { value } = await Storage.get({ key: "File1" });
-
-        if (value) {
-          setFileContent(value);
-          const parser = new XMLParser({
-            ignoreAttributes: false,
-            ignoreTextNodeAttr: true,
-          });
-          const json = parser.parse(value);
-          setJsonContent(json);
-          console.log("Json Data", json);
-        } else {
-          alert("No content found.");
-        }
-      } catch (error) {
-        console.error("Error loading file content:", error);
+    const loadVoucherData = async () => {
+      const { value } = await Storage.get({ key: "salesXML" });
+      if (value) {
+        const parser = new XMLParser({
+          ignoreAttributes: false,
+          ignoreTextNodeAttr: true,
+        });
+        const json = parser.parse(value);
+        const voucher = json?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE?.find(
+          (entry) => entry.VOUCHER.GUID === guid
+        );
+        setVoucherData(voucher?.VOUCHER || null);
       }
     };
-    loadFileContent();
-  }, []);
 
-  // Filter Voucher entries
-  const ledgerEntries =
-    jsonContent?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE?.filter(
-      (entry) => entry.VOUCHER
-    );
+    loadVoucherData();
+  }, [guid]);
 
-   // edit-Voucher Logic
-   const handleProductChange = (index, value) => {
-    const newEntries = [...entries];
-    newEntries[index].product = value;
-    setEntries(newEntries);
-  };
+  const handleSave = async () => {
+    // Save the updated voucher data back to storage
+    const { value } = await Storage.get({ key: "salesXML" });
+    if (value) {
+      const parser = new XMLParser({ ignoreAttributes: false });
+      const json = parser.parse(value);
 
-  const handlePriceChange = (index, value) => {
-    const newEntries = [...entries];
-    newEntries[index].price = value;
-    newEntries[index].subtotal = (
-      parseFloat(value) * parseInt(newEntries[index].quantity, 10) || 0
-    ).toFixed(2);
-    setEntries(newEntries);
-  };
+      const vouchers = json.ENVELOPE.BODY.IMPORTDATA.REQUESTDATA.TALLYMESSAGE;
+      const voucherIndex = vouchers.findIndex(
+        (entry) => entry.VOUCHER.GUID === guid
+      );
+      vouchers[voucherIndex].VOUCHER = voucherData;
 
-  const handleQuantityChange = (index, value) => {
-    const newEntries = [...entries];
-    newEntries[index].quantity = value;
-    newEntries[index].subtotal = (
-      parseFloat(newEntries[index].price) * parseInt(value, 10) || 0
-    ).toFixed(2);
-    setEntries(newEntries);
-  };
+      const builder = new XMLBuilder({ ignoreAttributes: false });
+      const updatedXML = builder.build(json);
 
-  const addEntry = () => {
-    setEntries([
-      ...entries,
-      { product: "", price: "", quantity: "", subtotal: "" },
-    ]);
-  };
+      await Storage.set({
+        key: "salesXML",
+        value: updatedXML,
+      });
 
-  const removeEntry = (index) => {
-    setEntries(entries.filter((_, i) => i !== index));
-  };
-
-  const getGrandTotal = () => {
-    return entries
-      .reduce((total, entry) => total + parseFloat(entry.subtotal || 0), 0)
-      .toFixed(2);
-  };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-
-    const sales = entries.map((entry) => ({
-      date: event.target.date.value,
-      product: entry.product,
-      price: entry.price,
-      quantity: entry.quantity,
-      subtotal: entry.subtotal,
-      party: event.target.party.value,
-    }));
-
-    // Create XML for each sales entry
-    // createXML(sales);
-  };
-  const ShowAddIcon = () => {
-    const lastEntry = entries[entries.length - 1];
-    return lastEntry.subtotal && parseFloat(lastEntry.subtotal) > 0;
-  };
-
-  const handlePrint = () => {
-    const xmlData = localStorage.getItem("salesXML");
-    if (xmlData) {
-      const blob = new Blob([xmlData], { type: "application/xml" });
-      saveAs(blob, "sales_data.xml");
-    } else {
-      alert("No sales data available to print.");
+      navigate("/voucher");
     }
   };
- 
+
+  const handleInputChange = (field, value) => {
+    setVoucherData((prevData) => ({
+      ...prevData,
+      [field]: value,
+    }));
+  };
+
   return (
     <div className="container">
-      <div className="content">
-        {fileContent ? (
-          <>
-            <div className="container">
-      <h1 className="title">Sales Form</h1>
-      <form className="sales-form" onSubmit={handleSubmit}>
-        <label htmlFor="date">Date:</label>
-        <input type="date" id="date" name="date" required />
-
-        <label htmlFor="party">Party:</label>
-        <select id="party" name="party" required>
-          <option value="">Select Party</option>
-          <option value="Flourish">Flourish</option>
-          <option value="Flonix">Flonix</option>
-        </select>
-
-        {entries.map((entry, index) => (
-          <div key={index} className="entry-group">
-            <div className="entry-fields">
-              <div className="field-group">
-                <label htmlFor={`product-${index}`}>Product:</label>
-                <select
-                  id={`product-${index}`}
-                  name={`product-${index}`}
-                  value={entry.product}
-                  onChange={(e) => handleProductChange(index, e.target.value)}
-                  required
-                >
-                  <option value="">Select Product</option>
-                  <option value="Ro Pump">Ro Pump</option>
-                  <option value="Membrane">Membrane</option>
-                </select>
-              </div>
-
-              <div className="inline-group">
-                <div className="field-group">
-                  <label htmlFor={`price-${index}`}>Price:</label>
-                  <input
-                    type="number"
-                    id={`price-${index}`}
-                    name={`price-${index}`}
-                    value={entry.price}
-                    onChange={(e) => handlePriceChange(index, e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="field-group">
-                  <label htmlFor={`quantity-${index}`}>Quantity:</label>
-                  <input
-                    type="number"
-                    id={`quantity-${index}`}
-                    name={`quantity-${index}`}
-                    value={entry.quantity}
-                    onChange={(e) =>
-                      handleQuantityChange(index, e.target.value)
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="field-group">
-                <label htmlFor={`subtotal-${index}`}>Sub-Total:</label>
-                <span className="subtotal-value">{entry.subtotal}</span>
-              </div>
-            </div>
-            {index !== 0 && (
-              <FaTrashAlt
-                className="subtotal-icon"
-                onClick={() => removeEntry(index)}
-              />
-            )}
+      {voucherData ? (
+        <form>
+          <h2>Edit Voucher</h2>
+          <div>
+            <label>Date:</label>
+            <input
+              type="date"
+              value={voucherData.DATE}
+              onChange={(e) => handleInputChange("DATE", e.target.value)}
+            />
           </div>
-        ))}
-        {ShowAddIcon() && <FaPlus className="add-icon" onClick={addEntry} />}
-        <div className="grand-total-container">
-          <label htmlFor="grand-total">Grand Total:</label>
-          <span className="grand-total-value">{getGrandTotal()}</span>
-        </div>
+          <div>
+            <label>Item Name:</label>
+            <input
+              type="text"
+              value={voucherData.ITEMNAME}
+              onChange={(e) => handleInputChange("ITEMNAME", e.target.value)}
+            />
+          </div>
+          <div>
+            <label>Quantity:</label>
+            <input
+              type="number"
+              value={voucherData.QUANTITY}
+              onChange={(e) => handleInputChange("QUANTITY", e.target.value)}
+            />
+          </div>
+          <div>
+            <label>Rate:</label>
+            <input
+              type="number"
+              value={voucherData.RATE}
+              onChange={(e) => handleInputChange("RATE", e.target.value)}
+            />
+          </div>
+          <div>
+            <label>Amount:</label>
+            <input
+              type="number"
+              value={voucherData.AMOUNT}
+              onChange={(e) => handleInputChange("AMOUNT", e.target.value)}
+            />
+          </div>
 
-        <div className="btn-group">
-          <button class="button-17" type="submit" role="button">
-            Edit
+          <button type="button" onClick={handleSave}>
+            Save Changes
           </button>
-          <button
-            class="button-17"
-            type="button"
-            role="button"
-            onClick={handlePrint}
-          >
-            Print
-          </button>
-        </div>
-      </form>
-    </div>
-          </>
-        ) : (
-          <p>No file content available.</p>
-        )}
-      </div>
+        </form>
+      ) : (
+        <p>Loading voucher data...</p>
+      )}
     </div>
   );
 };

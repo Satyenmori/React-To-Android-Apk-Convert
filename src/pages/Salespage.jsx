@@ -4,11 +4,12 @@ import { FaPlus, FaTrashAlt } from "react-icons/fa";
 import { saveAs } from "file-saver";
 import { create } from "xmlbuilder2";
 import { Storage } from "@capacitor/storage";
+import { useNavigate } from "react-router-dom";
 const Sales = () => {
   const [entries, setEntries] = useState([
     { product: "", price: "", quantity: "", subtotal: "" },
   ]);
-
+  const navigator=useNavigate()
   const createXML = async (sales) => {
     // Retrieve existing XML from Capacitor Storage or initialize new XML
     let existingXML;
@@ -79,6 +80,7 @@ const Sales = () => {
         value: updatedXML,
       });
       alert("Sales data saved as XML to Capacitor Storage!");
+      navigator("/voucher")
     } catch (error) {
       console.error("Error saving sales data:", error);
     }

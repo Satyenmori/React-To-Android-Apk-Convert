@@ -66,7 +66,7 @@ const Voucher = () => {
                   <td>{entry.VOUCHER.RATE}</td>
                   <td>{entry.VOUCHER.AMOUNT}</td>
                   <td>
-                    <Link to={"/edit"}>
+                    <Link to={`/edit/${entry.VOUCHER.GUID}`}>
                       {" "}
                       <button className="edit-btn">{<FaEdit />}</button>
                     </Link>
