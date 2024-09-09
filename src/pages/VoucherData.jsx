@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Storage } from "@capacitor/storage";
-import { XMLParser } from "fast-xml-parser";
+import { XMLBuilder, XMLParser } from "fast-xml-parser";
 import "../Style/Voucherdata.css";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { Link } from "react-router-dom";
@@ -39,6 +39,48 @@ const Voucher = () => {
       (entry) => entry.VOUCHER
     );
 
+  // Handle voucher deletion
+  const handleDelete = async (guid) => {
+    try {
+      // Filter out the voucher with the matching GUID
+      const updatedEntries = ledgerEntries.filter(
+        (entry) => entry.VOUCHER.GUID !== guid
+      );
+
+      
+      const updatedJsonContent = {
+        ...jsonContent,
+        ENVELOPE: {
+          ...jsonContent.ENVELOPE,
+          BODY: {
+            ...jsonContent.ENVELOPE.BODY,
+            IMPORTDATA: {
+              ...jsonContent.ENVELOPE.BODY.IMPORTDATA,
+              REQUESTDATA: {
+                ...jsonContent.ENVELOPE.BODY.IMPORTDATA.REQUESTDATA,
+                TALLYMESSAGE: updatedEntries, // Update with the filtered vouchers
+              },
+            },
+          },
+        },
+      };
+      
+      // Rebuild XML from updated JSON
+      const builder = new XMLBuilder({
+        ignoreAttributes: false,
+        ignoreTextNodeAttr: true,
+      });
+      const updatedXML = builder.build(updatedJsonContent);
+
+      // Store the updated XML back to local storage
+      await Storage.set({ key: "salesXML", value: updatedXML });
+
+      // Update state
+      setJsonContent(updatedJsonContent);
+    } catch (error) {
+      console.error("Error deleting voucher:", error);
+    }
+  };
   return (
     <div className="container">
       <h2 style={{ color: "black", textAlign: "center" }}>VOUCHER DATA</h2>
@@ -70,7 +112,12 @@ const Voucher = () => {
                       {" "}
                       <button className="edit-btn">{<FaEdit />}</button>
                     </Link>
-                    <button className="delete-btn">{<FaTrash />}</button>
+                    <button
+                      className="delete-btn"
+                      onClick={() => handleDelete(entry.VOUCHER.GUID)}
+                    >
+                      {<FaTrash />}
+                    </button>
                   </td>
                 </tr>
               ))}

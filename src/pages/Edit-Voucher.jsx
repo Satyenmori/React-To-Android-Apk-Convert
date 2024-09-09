@@ -55,10 +55,16 @@ const EditVoucher = () => {
   };
 
   const handleInputChange = (field, value) => {
-    setVoucherData((prevData) => ({
-      ...prevData,
-      [field]: value,
-    }));
+    const updatedVoucherData = { ...voucherData, [field]: value };
+
+    // Calculate the amount if quantity or rate changes
+    if (field === "QUANTITY" || field === "RATE") {
+      const quantity = updatedVoucherData.QUANTITY || 0;
+      const rate = updatedVoucherData.RATE || 0;
+      updatedVoucherData.AMOUNT = quantity * rate;
+    }
+
+    setVoucherData(updatedVoucherData);
   };
 
   return (
@@ -94,14 +100,21 @@ const EditVoucher = () => {
             onChange={(e) => handleInputChange("RATE", e.target.value)}
           />
 
-          <label>Amount:</label>
-          <input
-            type="number"
-            value={voucherData.AMOUNT}
-            onChange={(e) => handleInputChange("AMOUNT", e.target.value)}
-          />
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <label>Amount:</label>
+            <span style={{ marginLeft: "10px" }}>
+              {voucherData.AMOUNT || 0}
+            </span>{" "}
+            {/* Display Amount */}
+          </div>
 
-          <div style={{ display: "flex", justifyContent: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              marginTop: "20px",
+            }}
+          >
             <button
               className="button-17"
               type="button"
