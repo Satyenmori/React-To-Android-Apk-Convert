@@ -18,29 +18,43 @@ const EditVoucher = () => {
           ignoreTextNodeAttr: true,
         });
         const json = parser.parse(value);
+
         const voucher =
-          json?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE?.find(
-            (entry) => entry.VOUCHER.GUID === guid
-          );
-        setVoucherData(voucher?.VOUCHER || null);
+          json?.TALLYMESSAGE?.VOUCHER?.find((entry) => entry.GUID === guid);
+        setVoucherData(voucher || null);
       }
     };
 
     loadVoucherData();
   }, [guid]);
 
+  const handleInputChange = (field, value) => {
+    setVoucherData((prevData) => ({
+      ...prevData,
+      [field]: value,
+    }));
+  };
+
+  const handleInventoryChange = (index, field, value) => {
+    const updatedInventory = voucherData["ALLINVENTORYENTRIES.LIST"].map(
+      (item, idx) =>
+        idx === index ? { ...item, [field]: value } : item
+    );
+    setVoucherData((prevData) => ({
+      ...prevData,
+      "ALLINVENTORYENTRIES.LIST": updatedInventory,
+    }));
+  };
+
   const handleSave = async () => {
-    // Save the updated voucher data back to storage
     const { value } = await Storage.get({ key: "salesXML" });
     if (value) {
       const parser = new XMLParser({ ignoreAttributes: false });
       const json = parser.parse(value);
 
-      const vouchers = json.ENVELOPE.BODY.IMPORTDATA.REQUESTDATA.TALLYMESSAGE;
-      const voucherIndex = vouchers.findIndex(
-        (entry) => entry.VOUCHER.GUID === guid
-      );
-      vouchers[voucherIndex].VOUCHER = voucherData;
+      const vouchers = json.TALLYMESSAGE.VOUCHER;
+      const voucherIndex = vouchers.findIndex((entry) => entry.GUID === guid);
+      vouchers[voucherIndex] = voucherData;
 
       const builder = new XMLBuilder({ ignoreAttributes: false });
       const updatedXML = builder.build(json);
@@ -52,19 +66,6 @@ const EditVoucher = () => {
 
       navigate("/voucher");
     }
-  };
-
-  const handleInputChange = (field, value) => {
-    const updatedVoucherData = { ...voucherData, [field]: value };
-
-    // Calculate the amount if quantity or rate changes
-    if (field === "QUANTITY" || field === "RATE") {
-      const quantity = updatedVoucherData.QUANTITY || 0;
-      const rate = updatedVoucherData.RATE || 0;
-      updatedVoucherData.AMOUNT = quantity * rate;
-    }
-
-    setVoucherData(updatedVoucherData);
   };
 
   return (
@@ -79,46 +80,70 @@ const EditVoucher = () => {
             onChange={(e) => handleInputChange("DATE", e.target.value)}
           />
 
-          <label>Item Name:</label>
+          <label>Party Name:</label>
           <input
             type="text"
-            value={voucherData.ITEMNAME}
-            onChange={(e) => handleInputChange("ITEMNAME", e.target.value)}
+            value={voucherData.PARTYNAME}
+            onChange={(e) => handleInputChange("PARTYNAME", e.target.value)}
           />
 
-          <label>Quantity:</label>
+          <h3>Inventory Entries</h3>
+          {voucherData["ALLINVENTORYENTRIES.LIST"].map((item, index) => (
+            <div key={index}>
+              <label>Stock Item Name:</label>
+              <input
+                type="text"
+                value={item.STOCKITEMNAME}
+                onChange={(e) =>
+                  handleInventoryChange(index, "STOCKITEMNAME", e.target.value)
+                }
+              />
+
+              <label>Rate:</label>
+              <input
+                type="text"
+                value={item.RATE}
+                onChange={(e) =>
+                  handleInventoryChange(index, "RATE", e.target.value)
+                }
+              />
+
+              <label>Amount:</label>
+              <input
+                type="number"
+                value={item.AMOUNT}
+                onChange={(e) =>
+                  handleInventoryChange(index, "AMOUNT", e.target.value)
+                }
+              />
+
+              <label>Actual Qty:</label>
+              <input
+                type="text"
+                value={item.ACTUALQTY}
+                onChange={(e) =>
+                  handleInventoryChange(index, "ACTUALQTY", e.target.value)
+                }
+              />
+            </div>
+          ))}
+
+          <h3>Ledger Entries</h3>
+          <label>Ledger Amount:</label>
           <input
             type="number"
-            value={voucherData.QUANTITY}
-            onChange={(e) => handleInputChange("QUANTITY", e.target.value)}
+            value={voucherData["LEDGERENTRIES.LIST"].AMOUNT}
+            onChange={(e) =>
+              handleInputChange("LEDGERENTRIES.LIST.AMOUNT", e.target.value)
+            }
           />
-
-          <label>Rate:</label>
-          <input
-            type="number"
-            value={voucherData.RATE}
-            onChange={(e) => handleInputChange("RATE", e.target.value)}
-          />
-
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <label>Amount:</label>
-            <span style={{ marginLeft: "10px" }}>
-              {voucherData.AMOUNT || 0}
-            </span>{" "}
-            {/* Display Amount */}
-          </div>
 
           <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginTop: "20px",
-            }}
+            style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}
           >
             <button
               className="button-17"
               type="button"
-              role="button"
               onClick={handleSave}
             >
               Save Changes

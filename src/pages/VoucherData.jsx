@@ -6,7 +6,6 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
 const Voucher = () => {
-  const [fileContent, setFileContent] = useState(null);
   const [jsonContent, setJsonContent] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -16,7 +15,6 @@ const Voucher = () => {
         const { value } = await Storage.get({ key: "salesXML" });
 
         if (value) {
-          setFileContent(value);
           const parser = new XMLParser({
             ignoreAttributes: false,
             ignoreTextNodeAttr: true,
@@ -34,33 +32,18 @@ const Voucher = () => {
     loadFileContent();
   }, []);
 
-  // Filter LEDGER entries
-  const ledgerEntries =
-    jsonContent?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE?.filter(
-      (entry) => entry.VOUCHER
-    );
-
   // Handle voucher deletion
   const handleDelete = async (guid) => {
     try {
-      const updatedEntries = ledgerEntries.filter(
-        (entry) => entry.VOUCHER.GUID !== guid
+      const updatedVouchers = jsonContent.TALLYMESSAGE.VOUCHER.filter(
+        (voucher) => voucher.GUID !== guid
       );
 
       const updatedJsonContent = {
         ...jsonContent,
-        ENVELOPE: {
-          ...jsonContent.ENVELOPE,
-          BODY: {
-            ...jsonContent.ENVELOPE.BODY,
-            IMPORTDATA: {
-              ...jsonContent.ENVELOPE.BODY.IMPORTDATA,
-              REQUESTDATA: {
-                ...jsonContent.ENVELOPE.BODY.IMPORTDATA.REQUESTDATA,
-                TALLYMESSAGE: updatedEntries, // Update with the filtered vouchers
-              },
-            },
-          },
+        TALLYMESSAGE: {
+          ...jsonContent.TALLYMESSAGE,
+          VOUCHER: updatedVouchers,
         },
       };
 
@@ -81,10 +64,15 @@ const Voucher = () => {
   };
 
   // Handle search filtering
-  const filteredEntries = ledgerEntries?.filter(
-    (entry) =>
-      entry.VOUCHER.ITEMNAME.toLowerCase().startsWith(searchTerm.toLowerCase()) ||
-      entry.VOUCHER.DATE.includes(searchTerm)
+  const filteredEntries = jsonContent?.TALLYMESSAGE?.VOUCHER?.filter(
+    (entry) => {
+      const partyName = entry.PARTYNAME.toLowerCase().startsWith(
+        searchTerm.toLowerCase()
+      );
+      const dateMatch = entry.DATE.includes(searchTerm);
+
+      return partyName || dateMatch;
+    }
   );
 
   return (
@@ -116,35 +104,43 @@ const Voucher = () => {
               <tr>
                 <th>#</th>
                 <th>Date</th>
-                <th>Item Name</th>
-                <th>Quantity</th>
-                <th>Rate</th>
+                <th>Party Name</th>
+                <th>Product</th>
                 <th>Amount</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredEntries.map((entry, index) => (
-                <tr key={index}>
-                  <td>{index + 1}</td>
-                  <td>{entry.VOUCHER.DATE}</td>
-                  <td>{entry.VOUCHER.ITEMNAME}</td>
-                  <td>{entry.VOUCHER.QUANTITY}</td>
-                  <td>{entry.VOUCHER.RATE}</td>
-                  <td>{entry.VOUCHER.AMOUNT}</td>
-                  <td>
-                    <Link to={`/edit/${entry.VOUCHER.GUID}`}>
-                      <button className="edit-btn">{<FaEdit />}</button>
-                    </Link>
-                    <button
-                      className="delete-btn"
-                      onClick={() => handleDelete(entry.VOUCHER.GUID)}
-                    >
-                      {<FaTrash />}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filteredEntries.map((entry, index) => {
+                const stockItems = entry["ALLINVENTORYENTRIES.LIST"];
+                const itemCount = Array.isArray(stockItems)
+                  ? stockItems.length
+                  : 0;
+
+                const ledgerAmount =
+                  entry["LEDGERENTRIES.LIST"]?.["AMOUNT"] ?? "N/A";
+                return (
+                  <tr key={index}>
+                    <td>{index + 1}</td>
+                    <td>{entry.DATE}</td>
+                    <td>{entry.PARTYNAME}</td>
+                    <td>{itemCount} Product</td>
+                    <td>{ledgerAmount}</td>
+
+                    <td>
+                      <Link to={`/edit/${entry.GUID}`}>
+                        <button className="edit-btn">{<FaEdit />}</button>
+                      </Link>
+                      <button
+                        className="delete-btn"
+                        onClick={() => handleDelete(entry.GUID)}
+                      >
+                        {<FaTrash />}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         ) : (

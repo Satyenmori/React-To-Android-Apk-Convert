@@ -9,48 +9,35 @@ const Sales = () => {
   const [entries, setEntries] = useState([
     { product: "", price: "", quantity: "", subtotal: "" },
   ]);
-  const navigator=useNavigate()
+  const navigator = useNavigate();
   const createXML = async (sales) => {
-    // Retrieve existing XML from Capacitor Storage or initialize new XML
     let existingXML;
     try {
+      // Retrieve existing XML from Capacitor Storage
       const { value } = await Storage.get({ key: "salesXML" });
+      
       if (value) {
+        // Parse existing XML if found
         existingXML = new DOMParser().parseFromString(value, "application/xml");
       } else {
+        // Initialize new XML structure if not found
         existingXML = new DOMParser().parseFromString(
-          `
-          <ENVELOPE>
-            <HEADER>
-              <TALLYREQUEST>Import Data</TALLYREQUEST>
-            </HEADER>
-            <BODY>
-              <IMPORTDATA>
-                <REQUESTDESC>
-                  <REPORTNAME>All Masters</REPORTNAME>
-                  <STATICVARIABLES>
-                    <SVCURRENTCOMPANY>My Company</SVCURRENTCOMPANY>
-                  </STATICVARIABLES>
-                </REQUESTDESC>
-                <REQUESTDATA></REQUESTDATA>
-              </IMPORTDATA>
-            </BODY>
-          </ENVELOPE>
-        `,
+          `<TALLYMESSAGE xmlns:UDF="TallyUDF"></TALLYMESSAGE>`,
           "application/xml"
         );
       }
-
-      const requestData = existingXML.querySelector("REQUESTDATA");
-
+  
+      // Select the TALLYMESSAGE tag
+      const tallyMessage = existingXML.querySelector("TALLYMESSAGE");
+  
+      // Loop through sales entries and create new VOUCHER elements
       sales.forEach((sale) => {
-        const tallyMessage = existingXML.createElement("TALLYMESSAGE");
-        tallyMessage.setAttribute("xmlns:UDF", "TallyUDF");
-
         const voucher = existingXML.createElement("VOUCHER");
         const uniqueGUID = crypto.randomUUID();
+  
         voucher.innerHTML = `
           <DATE>${sale.date}</DATE>
+          <PARTYNAME>${sale.party}</PARTYNAME>
           <GUID>${uniqueGUID}</GUID>
           <GSTREGISTRATIONTYPE>Regular</GSTREGISTRATIONTYPE>
           <GSTNATUREOFSALE>Inter State</GSTNATUREOFSALE>
@@ -58,30 +45,53 @@ const Sales = () => {
           <UDF:GSTRETURNTYPE>Regular</UDF:GSTRETURNTYPE>
           <UDF:CONSULIEERGOODS>No</UDF:CONSULIEERGOODS>
           <VCHENTRYMODE>Item Invoice</VCHENTRYMODE>
-          <ITEMNAME>${sale.product}</ITEMNAME>
-          <CATEGORYNAME>Sales</CATEGORYNAME>
-          <GSTCLASS>Regular</GSTCLASS>
-          <GSTEXEMPT>No</GSTEXEMPT>
-          <BATCHNAME>${sale.product}-2024</BATCHNAME>
-          <EXPIRYPERIOD>Default</EXPIRYPERIOD>
-          <QUANTITY>${sale.quantity}</QUANTITY>
-          <RATE>${sale.price}</RATE>
-          <AMOUNT>${sale.subtotal}</AMOUNT>
-          <!-- Add other elements as needed -->
         `;
-
+  
+        let grandTotal = 0;
+  
+        // Create ALLINVENTORYENTRIES.LIST for each product in the sale
+        sale.products.forEach((product) => {
+          const inventoryEntry = existingXML.createElement("ALLINVENTORYENTRIES.LIST");
+          inventoryEntry.innerHTML = `
+            <STOCKITEMNAME>${product.product}</STOCKITEMNAME>
+            <RATE>${product.price}/nos</RATE>
+            <AMOUNT>${product.subtotal}</AMOUNT>
+            <ACTUALQTY>${product.quantity} nos</ACTUALQTY>
+            <ACCOUNTINGALLOCATIONS.LIST>
+              <AMOUNT>${product.subtotal}</AMOUNT>
+            </ACCOUNTINGALLOCATIONS.LIST>
+          `;
+          voucher.appendChild(inventoryEntry);
+  
+          // Calculate the grand total
+          grandTotal += parseFloat(product.subtotal);
+        });
+  
+        // Create and append LEDGERENTRIES.LIST with the grand total
+        const ledgerEntry = existingXML.createElement("LEDGERENTRIES.LIST");
+        ledgerEntry.innerHTML = `
+          <AMOUNT>${grandTotal.toFixed(2)}</AMOUNT>
+          <BILLALLOCATIONS.LIST>
+            <AMOUNT>${grandTotal.toFixed(2)}</AMOUNT>
+          </BILLALLOCATIONS.LIST>
+        `;
+        voucher.appendChild(ledgerEntry);
+  
+        // Append the completed voucher to TALLYMESSAGE
         tallyMessage.appendChild(voucher);
-        requestData.appendChild(tallyMessage);
       });
-
+  
+      // Serialize the updated XML back to string
       const updatedXML = new XMLSerializer().serializeToString(existingXML);
-
+  
+      // Save updated XML back to Capacitor Storage
       await Storage.set({
         key: "salesXML",
         value: updatedXML,
       });
-      alert("Sales data saved as XML to Capacitor Storage!");
-      navigator("/voucher")
+  
+      alert("Sales data add successfully!");
+      navigator("/voucher");
     } catch (error) {
       console.error("Error saving sales data:", error);
     }
@@ -131,16 +141,20 @@ const Sales = () => {
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    const sales = entries.map((entry) => ({
-      date: event.target.date.value,
-      product: entry.product,
-      price: entry.price,
-      quantity: entry.quantity,
-      subtotal: entry.subtotal,
-      party: event.target.party.value,
-    }));
+    const sales = [
+      {
+        date: event.target.date.value,
+        products: entries.map((entry) => ({
+          product: entry.product,
+          price: entry.price,
+          quantity: entry.quantity,
+          subtotal: entry.subtotal,
+        })),
+        party: event.target.party.value,
+      },
+    ];
 
-    // Create XML for each sales entry
+    // Create XML for the sales entry
     createXML(sales);
   };
   const ShowAddIcon = () => {
@@ -170,7 +184,10 @@ const Sales = () => {
         <select id="party" name="party" required>
           <option value="">Select Party</option>
           <option value="Flourish">Flourish</option>
-          <option value="Flonix">Flonix</option>
+          <option value="Havells">Havells</option>
+          <option value="SrWater">SrWater</option>
+          <option value="Alpha">Alpha</option>
+          <option value="Kent">Kent</option>
         </select>
 
         {entries.map((entry, index) => (
