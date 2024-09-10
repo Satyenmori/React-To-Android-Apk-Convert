@@ -45,12 +45,12 @@ function Navbar() {
               {isExpanded && " Voucher"}
             </Link>
           </li>
-          <li>
+          {/* <li>
             <Link to="/sales">
               <FaFilePdf />
               {isExpanded && " SALES"}
             </Link>
-          </li>
+          </li> */}
           <li>
             <Link to="/json">
               <FaExchangeAlt />

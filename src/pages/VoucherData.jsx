@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 const Voucher = () => {
   const [fileContent, setFileContent] = useState(null);
   const [jsonContent, setJsonContent] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const loadFileContent = async () => {
@@ -42,12 +43,10 @@ const Voucher = () => {
   // Handle voucher deletion
   const handleDelete = async (guid) => {
     try {
-      // Filter out the voucher with the matching GUID
       const updatedEntries = ledgerEntries.filter(
         (entry) => entry.VOUCHER.GUID !== guid
       );
 
-      
       const updatedJsonContent = {
         ...jsonContent,
         ENVELOPE: {
@@ -64,8 +63,7 @@ const Voucher = () => {
           },
         },
       };
-      
-      // Rebuild XML from updated JSON
+
       const builder = new XMLBuilder({
         ignoreAttributes: false,
         ignoreTextNodeAttr: true,
@@ -81,11 +79,38 @@ const Voucher = () => {
       console.error("Error deleting voucher:", error);
     }
   };
+
+  // Handle search filtering
+  const filteredEntries = ledgerEntries?.filter(
+    (entry) =>
+      entry.VOUCHER.ITEMNAME.toLowerCase().startsWith(searchTerm.toLowerCase()) ||
+      entry.VOUCHER.DATE.includes(searchTerm)
+  );
+
   return (
     <div className="container">
       <h2 style={{ color: "black", textAlign: "center" }}>VOUCHER DATA</h2>
+
+      {/* Top section with "Add New Form" button and Search Bar */}
+      <div className="top-bar">
+        <div className="left">
+          <Link to="/sales">
+            <button className="addbtn">Add New Form</button>
+          </Link>
+        </div>
+        <div className="right">
+          <input
+            type="text"
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-bar"
+          />
+        </div>
+      </div>
+
       <div className="table-responsive">
-        {ledgerEntries?.length > 0 ? (
+        {filteredEntries?.length > 0 ? (
           <table className="voucher-table">
             <thead>
               <tr>
@@ -99,7 +124,7 @@ const Voucher = () => {
               </tr>
             </thead>
             <tbody>
-              {ledgerEntries.map((entry, index) => (
+              {filteredEntries.map((entry, index) => (
                 <tr key={index}>
                   <td>{index + 1}</td>
                   <td>{entry.VOUCHER.DATE}</td>
@@ -109,7 +134,6 @@ const Voucher = () => {
                   <td>{entry.VOUCHER.AMOUNT}</td>
                   <td>
                     <Link to={`/edit/${entry.VOUCHER.GUID}`}>
-                      {" "}
                       <button className="edit-btn">{<FaEdit />}</button>
                     </Link>
                     <button
