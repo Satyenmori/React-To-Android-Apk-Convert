@@ -4,6 +4,7 @@ import { XMLBuilder, XMLParser } from "fast-xml-parser";
 import "../Style/Voucherdata.css";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { saveAs } from "file-saver";
 
 const Voucher = () => {
   const [jsonContent, setJsonContent] = useState(null);
@@ -74,6 +75,17 @@ const Voucher = () => {
       return partyName || dateMatch;
     }
   );
+  // print handle
+  const handlePrint = async () => {
+    const { value: xmlData } = await Storage.get({ key: "salesXML" });
+    if (xmlData) {
+      const blob = new Blob([xmlData], { type: "application/xml" });
+
+      saveAs(blob, "File1.xml");
+    } else {
+      alert("No sales data available to print.");
+    }
+  };
 
   return (
     <div className="container">
@@ -113,10 +125,15 @@ const Voucher = () => {
             <tbody>
               {filteredEntries.map((entry, index) => {
                 const stockItems = entry["ALLINVENTORYENTRIES.LIST"];
-                const itemCount = Array.isArray(stockItems)
-                  ? stockItems.length
-                  : 0;
 
+                // Ensure `stockItems` is always an array
+                const stockItemsArray = Array.isArray(stockItems)
+                  ? stockItems
+                  : stockItems
+                  ? [stockItems]
+                  : [];
+
+                const itemCount = stockItemsArray.length;
                 const ledgerAmount =
                   entry["LEDGERENTRIES.LIST"]?.["AMOUNT"] ?? "N/A";
                 return (
@@ -146,6 +163,13 @@ const Voucher = () => {
         ) : (
           <p>No Voucher data available.</p>
         )}
+      </div>
+      <div
+        style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}
+      >
+        <button className="btndis" type="button" onClick={handlePrint}>
+          <span>Download XML File</span>
+        </button>
       </div>
     </div>
   );
