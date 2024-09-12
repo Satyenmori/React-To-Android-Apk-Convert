@@ -21,6 +21,10 @@ const Voucher = () => {
             ignoreTextNodeAttr: true,
           });
           const json = parser.parse(value);
+          const vouchers = json.TALLYMESSAGE?.VOUCHER;
+          if (vouchers && !Array.isArray(vouchers)) {
+            json.TALLYMESSAGE.VOUCHER = [vouchers];
+          }
           setJsonContent(json);
           console.log("Json Data", json);
         } else {
