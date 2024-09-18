@@ -142,33 +142,42 @@ const Sales = () => {
       .toFixed(2);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
+    // Collect sales data from the form
+    const party = event.target.party.value;
+    const date = event.target.date.value;
+
+    const products = entries.map((entry) => ({
+      product: entry.product,
+      price: entry.price,
+      quantity: entry.quantity,
+      subtotal: entry.subtotal,
+    }));
+
+    // Store the sales in XML format (already implemented)
     const sales = [
       {
-        date: event.target.date.value,
-        products: entries.map((entry) => ({
-          product: entry.product,
-          price: entry.price,
-          quantity: entry.quantity,
-          subtotal: entry.subtotal,
-        })),
-        party: event.target.party.value,
+        date,
+        products,
+        party,
       },
     ];
+    await createXML(sales);
 
-    // Create XML for the sales entry
-    createXML(sales);
+    try {
+      // Store party data into the SQLite database
+      await saveSalesData(party, date, products);
 
-    sales[0].products.forEach((product) => {
-      saveSalesData(
-        sales[0].party,
-        product.product,
-        product.price,
-        product.quantity
-      );
-    });
+      alert("Sales data has been saved to the database successfully!");
+
+      // Navigate to the voucher page
+      navigator("/voucher");
+    } catch (error) {
+      console.error("Error saving sales data to SQLite:", error);
+      alert("There was an error saving the sales data. Please try again.");
+    }
   };
   const ShowAddIcon = () => {
     const lastEntry = entries[entries.length - 1];
