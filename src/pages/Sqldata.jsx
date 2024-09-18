@@ -9,14 +9,14 @@ const SqlForm = () => {
 
   useEffect(() => {
     const setupDB = async () => {
-      await initDB();
+      // await initDB();
     };
     setupDB();
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await saveFormData(name, email, phone);
+    // await saveFormData(name, email, phone);
     alert('Data saved successfully!');
   };
 

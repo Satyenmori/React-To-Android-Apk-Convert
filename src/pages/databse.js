@@ -11,23 +11,28 @@ export const initDB = async () => {
       1
     );
     await db.open();
-    // Table create karna
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS users (
+
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS sales (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        phone TEXT NOT NULL
+        party TEXT NOT NULL,
+        product TEXT NOT NULL,
+        price REAL NOT NULL,
+        quantity INTEGER NOT NULL
       );
-    `);
+    `;
+
+    await db.execute(createTableQuery);
+
     await sqliteConnection.closeConnection("mydb");
+    console.log("Sales table created successfully");
   } catch (err) {
     console.error("DB initialization failed:", err);
-    alert("DB initialization failed:", err);
+    alert("DB initialization failed: " + err.message);
   }
 };
 
-export const saveFormData = async (name, email, phone) => {
+export const saveSalesData = async (party, product, price, quantity) => {
   try {
     const db = await sqliteConnection.createConnection(
       "mydb",
@@ -36,14 +41,23 @@ export const saveFormData = async (name, email, phone) => {
       1
     );
     await db.open();
-    await db.run(`INSERT INTO users (name, email, phone) VALUES (?, ?, ?);`, [
-      name,
-      email,
-      phone,
-    ]);
+
+    const insertQuery = `INSERT INTO sales (party, product, price, quantity) VALUES (?, ?, ?, ?);`;
+    const result = await db.run(insertQuery, [party, product, price, quantity]);
+
+    console.log("Data insertion result:", result);
+
+    if (result.changes && result.changes.changes > 0) {
+      console.log("Data inserted successfully!");
+      alert("Sales data saved successfully to SQLite!");
+    } else {
+      console.error("No data was inserted.");
+      alert("No data was inserted.");
+    }
+
     await sqliteConnection.closeConnection("mydb");
   } catch (err) {
     console.error("Save data failed:", err);
-    alert("Save data failed:", err);
+    alert("Save data failed: " + err.message);
   }
 };

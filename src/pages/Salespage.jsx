@@ -1,21 +1,23 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "../Style/Sales.css";
 import { FaPlus, FaTrashAlt } from "react-icons/fa";
 import { saveAs } from "file-saver";
 import { create } from "xmlbuilder2";
 import { Storage } from "@capacitor/storage";
 import { useNavigate } from "react-router-dom";
+import { initDB, saveSalesData } from "./databse";
 const Sales = () => {
   const [entries, setEntries] = useState([
     { product: "", price: "", quantity: "", subtotal: "" },
   ]);
   const navigator = useNavigate();
+
   const createXML = async (sales) => {
     let existingXML;
     try {
       // Retrieve existing XML from Capacitor Storage
       const { value } = await Storage.get({ key: "salesXML" });
-      
+
       if (value) {
         // Parse existing XML if found
         existingXML = new DOMParser().parseFromString(value, "application/xml");
@@ -26,15 +28,15 @@ const Sales = () => {
           "application/xml"
         );
       }
-  
+
       // Select the TALLYMESSAGE tag
       const tallyMessage = existingXML.querySelector("TALLYMESSAGE");
-  
+
       // Loop through sales entries and create new VOUCHER elements
       sales.forEach((sale) => {
         const voucher = existingXML.createElement("VOUCHER");
         const uniqueGUID = crypto.randomUUID();
-  
+
         voucher.innerHTML = `
           <DATE>${sale.date}</DATE>
           <PARTYNAME>${sale.party}</PARTYNAME>
@@ -46,12 +48,14 @@ const Sales = () => {
           <UDF:CONSULIEERGOODS>No</UDF:CONSULIEERGOODS>
           <VCHENTRYMODE>Item Invoice</VCHENTRYMODE>
         `;
-  
+
         let grandTotal = 0;
-  
+
         // Create ALLINVENTORYENTRIES.LIST for each product in the sale
         sale.products.forEach((product) => {
-          const inventoryEntry = existingXML.createElement("ALLINVENTORYENTRIES.LIST");
+          const inventoryEntry = existingXML.createElement(
+            "ALLINVENTORYENTRIES.LIST"
+          );
           inventoryEntry.innerHTML = `
             <STOCKITEMNAME>${product.product}</STOCKITEMNAME>
             <RATE>${product.price}/nos</RATE>
@@ -62,11 +66,11 @@ const Sales = () => {
             </ACCOUNTINGALLOCATIONS.LIST>
           `;
           voucher.appendChild(inventoryEntry);
-  
+
           // Calculate the grand total
           grandTotal += parseFloat(product.subtotal);
         });
-  
+
         // Create and append LEDGERENTRIES.LIST with the grand total
         const ledgerEntry = existingXML.createElement("LEDGERENTRIES.LIST");
         ledgerEntry.innerHTML = `
@@ -76,20 +80,20 @@ const Sales = () => {
           </BILLALLOCATIONS.LIST>
         `;
         voucher.appendChild(ledgerEntry);
-  
+
         // Append the completed voucher to TALLYMESSAGE
         tallyMessage.appendChild(voucher);
       });
-  
+
       // Serialize the updated XML back to string
       const updatedXML = new XMLSerializer().serializeToString(existingXML);
-  
+
       // Save updated XML back to Capacitor Storage
       await Storage.set({
         key: "salesXML",
         value: updatedXML,
       });
-  
+
       alert("Sales data add successfully!");
       navigator("/voucher");
     } catch (error) {
@@ -156,6 +160,15 @@ const Sales = () => {
 
     // Create XML for the sales entry
     createXML(sales);
+
+    sales[0].products.forEach((product) => {
+      saveSalesData(
+        sales[0].party,
+        product.product,
+        product.price,
+        product.quantity
+      );
+    });
   };
   const ShowAddIcon = () => {
     const lastEntry = entries[entries.length - 1];
@@ -172,7 +185,9 @@ const Sales = () => {
       alert("No sales data available to print.");
     }
   };
-
+  useEffect(() => {
+    initDB();
+  }, []);
   return (
     <div className="container">
       <h1 className="title">Sales Form</h1>
