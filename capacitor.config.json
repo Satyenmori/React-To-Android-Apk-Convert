@@ -4,6 +4,11 @@
   "webDir": "build",
   "bundledWebRuntime": false,
   "plugins": {
+    "CapacitorSQLite": {
+      "android": {
+        "mode": "no-encryption"
+      }
+    },
     "Camera": {
       "photo": {
         "quality": 90

@@ -6,6 +6,7 @@ import {
   FaBars,
   FaFilePdf,
   FaEdit,
+  FaDatabase,
 } from "react-icons/fa"; // Import Font Awesome icons
 import "../Style/Navbar.css";
 import XmlFileRead from "./ImportPage";
@@ -14,6 +15,7 @@ import Sales from "./Salespage";
 import EditVoucher from "./Edit-Voucher";
 import Voucher from "./VoucherData";
 import { AiOutlineBarChart } from "react-icons/ai";
+import SqlForm from "./Sqldata";
 
 function Navbar() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -57,6 +59,12 @@ function Navbar() {
               {isExpanded && " Convert JSON"}
             </Link>
           </li>
+          <li>
+            <Link to="/sqldata">
+              <FaDatabase />
+              {isExpanded && " Convert JSON"}
+            </Link>
+          </li>
         </ul>
       </nav>
       <div className="main-content">
@@ -66,6 +74,7 @@ function Navbar() {
           <Route path="/sales" element={<Sales />} />
           <Route path="/voucher" element={<Voucher />} />
           <Route path="/edit/:guid" element={<EditVoucher />} />
+          <Route path="/sqldata" element={<SqlForm />} />
         </Routes>
       </div>
     </div>
