@@ -5,11 +5,12 @@ import { saveAs } from "file-saver";
 import { create } from "xmlbuilder2";
 import { Storage } from "@capacitor/storage";
 import { useNavigate } from "react-router-dom";
-import { initDB, saveSalesData } from "./databse";
+import { fetchParties, initDB, saveSalesData } from "./databse";
 const Sales = () => {
   const [entries, setEntries] = useState([
     { product: "", price: "", quantity: "", subtotal: "" },
   ]);
+  const [parties, setParties] = useState([]);
   const navigator = useNavigate();
 
   const createXML = async (sales) => {
@@ -195,7 +196,15 @@ const Sales = () => {
     }
   };
   useEffect(() => {
-    initDB();
+    const FetchParties = async () => {
+      // Initialize the DB
+      await initDB();
+      // Fetch parties
+      const fetchedParties = await fetchParties();
+      setParties(fetchedParties); // Set fetched parties in state
+    };
+
+    FetchParties();
   }, []);
   return (
     <div className="container">
@@ -213,7 +222,6 @@ const Sales = () => {
           <option value="Alpha">Alpha</option>
           <option value="Kent">Kent</option>
         </select>
-
         {entries.map((entry, index) => (
           <div key={index} className="entry-group">
             <div className="entry-fields">

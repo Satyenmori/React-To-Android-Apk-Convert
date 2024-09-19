@@ -105,7 +105,7 @@ const Voucher = () => {
         <div className="right">
           <input
             type="text"
-            placeholder="Search..."
+            placeholder="Search Party......"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-bar"

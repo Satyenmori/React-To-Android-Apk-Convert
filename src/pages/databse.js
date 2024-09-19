@@ -37,7 +37,7 @@ export const initDB = async () => {
     await db.execute(createSalesItemsTableQuery);
 
     await sqliteConnection.closeConnection("mydb");
-    alert("Sales and Sales Items tables created successfully");
+    // alert("Sales and Sales Items tables created successfully");
   } catch (err) {
     console.error("DB initialization failed:", err);
     alert("DB initialization failed: " + err.message);
@@ -55,17 +55,17 @@ export const saveSalesData = async (party, date, products) => {
     );
     await db.open();
 
-    // Insert party and date into the sales table
+    
     const insertSalesQuery = `INSERT INTO sales (party, date) VALUES (?, ?);`;
     const result = await db.run(insertSalesQuery, [party, date]);
 
     const saleId = result.changes.lastId; // Get the last inserted sale_id
 
-    // Check if the sale record was inserted successfully
+    
     if (result.changes && result.changes.changes > 0) {
-      alert("Sales data inserted successfully with sale_id:", saleId);
+      // alert("Sales data inserted successfully with sale_id:", saleId);
 
-      // Insert each product into the sales_items table
+      
       for (const product of products) {
         const insertProductQuery = `INSERT INTO sales_items (sale_id, product, price, quantity) VALUES (?, ?, ?, ?);`;
         await db.run(insertProductQuery, [
@@ -80,12 +80,59 @@ export const saveSalesData = async (party, date, products) => {
       alert("Sales data saved successfully to SQLite!");
     } else {
       console.error("Failed to insert sales data.");
-      alert("Failed to insert sales data.");
+      // alert("Failed to insert sales data.");
     }
 
     await sqliteConnection.closeConnection("mydb");
   } catch (err) {
     console.error("Save data failed:", err);
     alert("Save data failed: " + err.message);
+  }
+};
+
+
+// Fetch party Data in sql
+export const fetchParties = async () => {
+  try {
+    // Check if the connection already exists
+    const isConn = await sqliteConnection.isConnection("mydb");
+
+    if (isConn.result) {
+      // If the connection exists, close it first
+      await sqliteConnection.closeConnection("mydb",false);
+    }
+
+    // Create a new connection to the SQLite database
+    const db = await sqliteConnection.createConnection(
+      "mydb",
+      false,
+      "no-encryption",
+      1
+    );
+    await db.open();
+
+    // Query to fetch all unique party names from the sales table
+    const query = `SELECT DISTINCT party FROM sales;`;
+    const result = await db.query(query);
+
+    
+    await sqliteConnection.closeConnection("mydb",false);
+
+    
+    if (result.values && result.values.length > 0) {
+      
+      const parties = result.values.map((row) => row.party);
+      console.log("Fetched parties:", parties);
+      alert("Fetched party data successfully!");
+      return parties;
+    } else {
+      console.log("No parties found.");
+      alert("No parties found.");
+      return [];
+    }
+  } catch (err) {
+    console.error("Failed to fetch parties:", err);
+    alert("Failed to fetch parties: " + err.message);
+    return [];
   }
 };
