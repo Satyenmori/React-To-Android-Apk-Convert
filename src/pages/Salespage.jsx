@@ -5,7 +5,7 @@ import { saveAs } from "file-saver";
 import { create } from "xmlbuilder2";
 import { Storage } from "@capacitor/storage";
 import { useNavigate } from "react-router-dom";
-import { fetchParties, initDB, saveSalesData } from "./databse";
+import { initDB, saveSalesData, fetchProductDetails } from "./databse";
 const Sales = () => {
   const [entries, setEntries] = useState([
     { product: "", price: "", quantity: "", subtotal: "" },
@@ -102,9 +102,25 @@ const Sales = () => {
     }
   };
 
-  const handleProductChange = (index, value) => {
+  const handleProductChange = async (index, value) => {
+    const selectedParty = document.getElementById("party").value;
+
     const newEntries = [...entries];
     newEntries[index].product = value;
+
+    if (selectedParty && value) {
+      // Fetch price and quantity for the selected product and party
+      const { price, quantity } = await fetchProductDetails(
+        selectedParty,
+        value
+      );
+      newEntries[index].price = price || "";
+      newEntries[index].quantity = quantity || "";
+      newEntries[index].subtotal = (
+        parseFloat(price) * parseInt(quantity, 10) || 0
+      ).toFixed(2);
+    }
+
     setEntries(newEntries);
   };
 
@@ -197,11 +213,7 @@ const Sales = () => {
   };
   useEffect(() => {
     const FetchParties = async () => {
-      // Initialize the DB
       await initDB();
-      // Fetch parties
-      const fetchedParties = await fetchParties();
-      setParties(fetchedParties); // Set fetched parties in state
     };
 
     FetchParties();

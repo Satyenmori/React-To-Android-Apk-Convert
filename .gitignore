@@ -13,7 +13,7 @@ ic_launcher_round.png
 
 # production
 /build
-
+Sqlfetch.jsx
 # misc
 .DS_Store
 .env.local

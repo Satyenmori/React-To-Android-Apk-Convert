@@ -55,17 +55,14 @@ export const saveSalesData = async (party, date, products) => {
     );
     await db.open();
 
-    
     const insertSalesQuery = `INSERT INTO sales (party, date) VALUES (?, ?);`;
     const result = await db.run(insertSalesQuery, [party, date]);
 
     const saleId = result.changes.lastId; // Get the last inserted sale_id
 
-    
     if (result.changes && result.changes.changes > 0) {
       // alert("Sales data inserted successfully with sale_id:", saleId);
 
-      
       for (const product of products) {
         const insertProductQuery = `INSERT INTO sales_items (sale_id, product, price, quantity) VALUES (?, ?, ?, ?);`;
         await db.run(insertProductQuery, [
@@ -90,19 +87,9 @@ export const saveSalesData = async (party, date, products) => {
   }
 };
 
-
-// Fetch party Data in sql
-export const fetchParties = async () => {
+// Fetch product details based on the selected party and product
+export const fetchProductDetails = async (party, product) => {
   try {
-    // Check if the connection already exists
-    const isConn = await sqliteConnection.isConnection("mydb");
-
-    if (isConn.result) {
-      // If the connection exists, close it first
-      await sqliteConnection.closeConnection("mydb",false);
-    }
-
-    // Create a new connection to the SQLite database
     const db = await sqliteConnection.createConnection(
       "mydb",
       false,
@@ -110,29 +97,28 @@ export const fetchParties = async () => {
       1
     );
     await db.open();
-
-    // Query to fetch all unique party names from the sales table
-    const query = `SELECT DISTINCT party FROM sales;`;
-    const result = await db.query(query);
-
     
-    await sqliteConnection.closeConnection("mydb",false);
+    const query = `
+      SELECT price, quantity 
+      FROM sales_items 
+      INNER JOIN sales ON sales_items.sale_id = sales.id
+      WHERE sales.party = ? AND sales_items.product = ?;
+    `;
+    const result = await db.query(query, [party, product]);
 
-    
+    await sqliteConnection.closeConnection("mydb", false);
+
     if (result.values && result.values.length > 0) {
-      
-      const parties = result.values.map((row) => row.party);
-      console.log("Fetched parties:", parties);
-      alert("Fetched party data successfully!");
-      return parties;
+      return {
+        price: result.values[0].price,
+        quantity: result.values[0].quantity,
+      };
     } else {
-      console.log("No parties found.");
-      alert("No parties found.");
-      return [];
+      return { price: "", quantity: "" };
     }
   } catch (err) {
-    console.error("Failed to fetch parties:", err);
-    alert("Failed to fetch parties: " + err.message);
-    return [];
+    console.error("Failed to fetch product details:", err);
+    alert("Failed to fetch product details: " + err.message);
+    return { price: "", quantity: "" };
   }
 };
