@@ -122,3 +122,45 @@ export const fetchProductDetails = async (party, product) => {
     return { price: "", quantity: "" };
   }
 };
+
+// Update sales data (edit sales form)
+export const updateVoucherInDB = async (party, date, products) => {
+  try {
+    const db = await sqliteConnection.createConnection(
+      "mydb",
+      false,
+      "no-encryption",
+      1
+    );
+    await db.open();
+
+    // First, delete existing sales and products for this party and date
+    const deleteSalesQuery = `
+      DELETE FROM sales 
+      WHERE party = ? AND date = ?;
+    `;
+    await db.run(deleteSalesQuery, [party, date]);
+
+    // Insert the updated sales and products
+    const insertSalesQuery = `INSERT INTO sales (party, date) VALUES (?, ?);`;
+    const result = await db.run(insertSalesQuery, [party, date]);
+
+    const saleId = result.changes.lastId;
+
+    for (const product of products) {
+      const insertProductQuery = `INSERT INTO sales_items (sale_id, product, price, quantity) VALUES (?, ?, ?, ?);`;
+      await db.run(insertProductQuery, [
+        saleId,
+        product.product,
+        product.price,
+        product.quantity,
+      ]);
+    }
+
+    alert("Voucher updated successfully in the database.");
+    await sqliteConnection.closeConnection("mydb");
+  } catch (err) {
+    console.error("Update voucher in database failed:", err);
+    alert("Update voucher failed: " + err.message);
+  }
+};
