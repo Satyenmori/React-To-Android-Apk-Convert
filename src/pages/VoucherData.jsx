@@ -5,6 +5,7 @@ import "../Style/Voucherdata.css";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { saveAs } from "file-saver";
+import { deleteVoucher } from "./databse";
 
 const Voucher = () => {
   const [jsonContent, setJsonContent] = useState(null);
@@ -38,7 +39,7 @@ const Voucher = () => {
   }, []);
 
   // Handle voucher deletion
-  const handleDelete = async (guid) => {
+  const handleDelete = async (guid, party, date) => {
     try {
       const updatedVouchers = jsonContent.TALLYMESSAGE.VOUCHER.filter(
         (voucher) => voucher.GUID !== guid
@@ -63,8 +64,14 @@ const Voucher = () => {
 
       // Update state
       setJsonContent(updatedJsonContent);
+
+      // sql data delete
+      await deleteVoucher(party, date);
+
+      alert("Voucher deleted successfully from LS and SQL.");
     } catch (error) {
       console.error("Error deleting voucher:", error);
+      alert("Error deleting voucher: " + error.message);
     }
   };
 
@@ -154,7 +161,9 @@ const Voucher = () => {
                       </Link>
                       <button
                         className="delete-btn"
-                        onClick={() => handleDelete(entry.GUID)}
+                        onClick={() =>
+                          handleDelete(entry.GUID, entry.PARTYNAME, entry.DATE)
+                        }
                       >
                         {<FaTrash />}
                       </button>

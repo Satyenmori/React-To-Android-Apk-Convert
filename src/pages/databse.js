@@ -97,7 +97,7 @@ export const fetchProductDetails = async (party, product) => {
       1
     );
     await db.open();
-    
+
     const query = `
       SELECT price, quantity 
       FROM sales_items 
@@ -123,7 +123,7 @@ export const fetchProductDetails = async (party, product) => {
   }
 };
 
-// Update sales data (edit sales form)
+// Update sales data
 export const updateVoucherInDB = async (party, date, products) => {
   try {
     const db = await sqliteConnection.createConnection(
@@ -162,5 +162,31 @@ export const updateVoucherInDB = async (party, date, products) => {
   } catch (err) {
     console.error("Update voucher in database failed:", err);
     alert("Update voucher failed: " + err.message);
+  }
+};
+
+// Delete query
+export const deleteVoucher = async (party, date) => {
+  try {
+    const db = await sqliteConnection.createConnection(
+      "mydb",
+      false,
+      "no-encryption",
+      1
+    );
+    await db.open();
+
+    // Delete from sales where the party and date match
+    const deleteSalesQuery = `
+      DELETE FROM sales 
+      WHERE party = ? AND date = ?;
+    `;
+    await db.run(deleteSalesQuery, [party, date]);
+
+    await sqliteConnection.closeConnection("mydb");
+    console.log("Data deleted successfully from SQLite.");
+  } catch (err) {
+    console.error("Failed to delete data from SQLite:", err);
+    throw new Error("Failed to delete data from SQLite: " + err.message);
   }
 };
