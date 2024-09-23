@@ -6,6 +6,7 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { saveAs } from "file-saver";
 import { deleteVoucher } from "./databse";
+import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 
 const Voucher = () => {
   const [jsonContent, setJsonContent] = useState(null);
@@ -89,12 +90,28 @@ const Voucher = () => {
   // print handle
   const handlePrint = async () => {
     const { value: xmlData } = await Storage.get({ key: "salesXML" });
-    if (xmlData) {
-      const blob = new Blob([xmlData], { type: "application/xml" });
-
-      saveAs(blob, "File1.xml");
-    } else {
+    if (!xmlData) {
       alert("No sales data available to print.");
+      return;
+    }
+    const isMobile = window.Capacitor?.isNativePlatform();
+
+    if (isMobile) {
+      try {
+        await Filesystem.writeFile({
+          path: "File1.xml",
+          data: xmlData,
+          directory: Directory.External,
+          encoding: Encoding.UTF8,
+        });
+        alert("File downloaded successfully to mobile device!");
+      } catch (error) {
+        console.error("Error saving file on mobile:", error);
+        alert("Error downloading file on mobile: " + error.message);
+      }
+    } else {
+      const blob = new Blob([xmlData], { type: "application/xml" });
+      saveAs(blob, "File1.xml");
     }
   };
 

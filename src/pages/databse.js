@@ -36,7 +36,7 @@ export const initDB = async () => {
     await db.execute(createSalesItemsTableQuery);
 
     await sqliteConnection.closeConnection("mydb");
-    alert("Sales and Sales Items tables created successfully");
+    // alert("Sales and Sales Items tables created successfully");
   } catch (err) {
     console.error("DB initialization failed:", err);
     alert("DB initialization failed: " + err.message);

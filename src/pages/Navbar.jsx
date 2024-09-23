@@ -1,13 +1,6 @@
 import React, { useState } from "react";
 import { Link, Route, Routes } from "react-router-dom";
-import {
-  FaFileImport,
-  FaExchangeAlt,
-  FaBars,
-  FaFilePdf,
-  FaEdit,
-  FaDatabase,
-} from "react-icons/fa"; // Import Font Awesome icons
+import { FaFileImport, FaBars } from "react-icons/fa";
 import "../Style/Navbar.css";
 import XmlFileRead from "./ImportPage";
 import XmlTojson from "./XmlToJson";
@@ -38,31 +31,13 @@ function Navbar() {
           <li>
             <Link to="/">
               <FaFileImport />
-              {isExpanded && " IMPORT XML"}
+              {isExpanded && "\u00A0 IMPORT XML"}
             </Link>
           </li>
           <li>
             <Link to="/voucher">
               <AiOutlineBarChart />
-              {isExpanded && " Voucher"}
-            </Link>
-          </li>
-          {/* <li>
-            <Link to="/sales">
-              <FaFilePdf />
-              {isExpanded && " SALES"}
-            </Link>
-          </li> */}
-          <li>
-            <Link to="/json">
-              <FaExchangeAlt />
-              {isExpanded && " Convert JSON"}
-            </Link>
-          </li>
-          <li>
-            <Link to="/sqldata">
-              <FaDatabase />
-              {isExpanded && " Convert JSON"}
+              {isExpanded && "\u00A0 Voucher"}
             </Link>
           </li>
         </ul>
