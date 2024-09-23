@@ -118,7 +118,7 @@ const EditSales = () => {
             price: entry.price,
             quantity: entry.quantity,
           }));
-          await updateVoucherInDB(party, date, products);
+          await updateVoucherInDB(party, products);
 
           alert("Voucher updated successfully!");
           navigator("/voucher");

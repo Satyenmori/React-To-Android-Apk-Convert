@@ -39,7 +39,7 @@ const Voucher = () => {
   }, []);
 
   // Handle voucher deletion
-  const handleDelete = async (guid, party, date) => {
+  const handleDelete = async (guid, party) => {
     try {
       const updatedVouchers = jsonContent.TALLYMESSAGE.VOUCHER.filter(
         (voucher) => voucher.GUID !== guid
@@ -66,7 +66,7 @@ const Voucher = () => {
       setJsonContent(updatedJsonContent);
 
       // sql data delete
-      await deleteVoucher(party, date);
+      await deleteVoucher(party);
 
       alert("Voucher deleted successfully from LS and SQL.");
     } catch (error) {
@@ -162,7 +162,7 @@ const Voucher = () => {
                       <button
                         className="delete-btn"
                         onClick={() =>
-                          handleDelete(entry.GUID, entry.PARTYNAME, entry.DATE)
+                          handleDelete(entry.GUID, entry.PARTYNAME)
                         }
                       >
                         {<FaTrash />}

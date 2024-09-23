@@ -17,8 +17,7 @@ export const initDB = async () => {
     const createSalesTableQuery = `
       CREATE TABLE IF NOT EXISTS sales (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        party TEXT NOT NULL,
-        date TEXT NOT NULL
+        party TEXT NOT NULL
       );
     `;
     await db.execute(createSalesTableQuery);
@@ -37,7 +36,7 @@ export const initDB = async () => {
     await db.execute(createSalesItemsTableQuery);
 
     await sqliteConnection.closeConnection("mydb");
-    // alert("Sales and Sales Items tables created successfully");
+    alert("Sales and Sales Items tables created successfully");
   } catch (err) {
     console.error("DB initialization failed:", err);
     alert("DB initialization failed: " + err.message);
@@ -45,7 +44,7 @@ export const initDB = async () => {
 };
 
 // Save sales data with multiple products
-export const saveSalesData = async (party, date, products) => {
+export const saveSalesData = async (party, products) => {
   try {
     const db = await sqliteConnection.createConnection(
       "mydb",
@@ -55,14 +54,52 @@ export const saveSalesData = async (party, date, products) => {
     );
     await db.open();
 
-    const insertSalesQuery = `INSERT INTO sales (party, date) VALUES (?, ?);`;
-    const result = await db.run(insertSalesQuery, [party, date]);
+    // Check if the sale already exists for the given party and date
+    const selectSalesQuery = `SELECT id FROM sales WHERE party = ?;`;
+    const salesResult = await db.query(selectSalesQuery, [party]);
 
-    const saleId = result.changes.lastId; // Get the last inserted sale_id
+    let saleId;
 
-    if (result.changes && result.changes.changes > 0) {
-      // alert("Sales data inserted successfully with sale_id:", saleId);
+    if (salesResult.values && salesResult.values.length > 0) {
+      // If sale already exists, get the sale_id
+      saleId = salesResult.values[0].id;
 
+      // Update existing products for this sale
+      for (const product of products) {
+        const selectProductQuery = `SELECT id FROM sales_items WHERE sale_id = ? AND product = ?;`;
+        const productResult = await db.query(selectProductQuery, [
+          saleId,
+          product.product,
+        ]);
+
+        if (productResult.values && productResult.values.length > 0) {
+          // Update the existing product if it exists
+          const updateProductQuery = `UPDATE sales_items SET price = ?, quantity = ? WHERE sale_id = ? AND product = ?;`;
+          await db.run(updateProductQuery, [
+            product.price,
+            product.quantity,
+            saleId,
+            product.product,
+          ]);
+        } else {
+          // Insert a new product if it doesn't exist
+          const insertProductQuery = `INSERT INTO sales_items (sale_id, product, price, quantity) VALUES (?, ?, ?, ?);`;
+          await db.run(insertProductQuery, [
+            saleId,
+            product.product,
+            product.price,
+            product.quantity,
+          ]);
+        }
+      }
+      console.log("Sales data updated successfully.");
+    } else {
+      // If sale doesn't exist, insert new sale
+      const insertSalesQuery = `INSERT INTO sales (party) VALUES (?);`;
+      const result = await db.run(insertSalesQuery, [party]);
+      saleId = result.changes.lastId;
+
+      // Insert products for the new sale
       for (const product of products) {
         const insertProductQuery = `INSERT INTO sales_items (sale_id, product, price, quantity) VALUES (?, ?, ?, ?);`;
         await db.run(insertProductQuery, [
@@ -72,14 +109,10 @@ export const saveSalesData = async (party, date, products) => {
           product.quantity,
         ]);
       }
-
-      console.log("All products inserted successfully.");
-      alert("Sales data saved successfully to SQLite!");
-    } else {
-      console.error("Failed to insert sales data.");
-      // alert("Failed to insert sales data.");
+      console.log("Sales data inserted successfully.");
     }
 
+    alert("Sales data saved successfully to SQLite!");
     await sqliteConnection.closeConnection("mydb");
   } catch (err) {
     console.error("Save data failed:", err);
@@ -124,7 +157,7 @@ export const fetchProductDetails = async (party, product) => {
 };
 
 // Update sales data
-export const updateVoucherInDB = async (party, date, products) => {
+export const updateVoucherInDB = async (party, products) => {
   try {
     const db = await sqliteConnection.createConnection(
       "mydb",
@@ -137,13 +170,13 @@ export const updateVoucherInDB = async (party, date, products) => {
     // First, delete existing sales and products for this party and date
     const deleteSalesQuery = `
       DELETE FROM sales 
-      WHERE party = ? AND date = ?;
+      WHERE party = ?;
     `;
-    await db.run(deleteSalesQuery, [party, date]);
+    await db.run(deleteSalesQuery, [party]);
 
     // Insert the updated sales and products
-    const insertSalesQuery = `INSERT INTO sales (party, date) VALUES (?, ?);`;
-    const result = await db.run(insertSalesQuery, [party, date]);
+    const insertSalesQuery = `INSERT INTO sales (party) VALUES (?);`;
+    const result = await db.run(insertSalesQuery, [party]);
 
     const saleId = result.changes.lastId;
 
@@ -166,7 +199,7 @@ export const updateVoucherInDB = async (party, date, products) => {
 };
 
 // Delete query
-export const deleteVoucher = async (party, date) => {
+export const deleteVoucher = async (party) => {
   try {
     const db = await sqliteConnection.createConnection(
       "mydb",
@@ -179,9 +212,9 @@ export const deleteVoucher = async (party, date) => {
     // Delete from sales where the party and date match
     const deleteSalesQuery = `
       DELETE FROM sales 
-      WHERE party = ? AND date = ?;
+      WHERE party = ?;
     `;
-    await db.run(deleteSalesQuery, [party, date]);
+    await db.run(deleteSalesQuery, [party]);
 
     await sqliteConnection.closeConnection("mydb");
     console.log("Data deleted successfully from SQLite.");

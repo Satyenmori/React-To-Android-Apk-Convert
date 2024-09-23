@@ -185,7 +185,7 @@ const Sales = () => {
 
     try {
       // Store party data into the SQLite database
-      await saveSalesData(party, date, products);
+      await saveSalesData(party, products);
 
       alert("Sales data has been saved to the database successfully!");
 
