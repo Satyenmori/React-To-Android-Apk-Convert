@@ -35,20 +35,54 @@ const Sales = () => {
 
       // Loop through sales entries and create new VOUCHER elements
       sales.forEach((sale) => {
-        const voucher = existingXML.createElement("VOUCHER");
         const uniqueGUID = crypto.randomUUID();
+        const Dateformate = sale.date.replace(/-/g, "");
+        const voucher = existingXML.createElement("VOUCHER");
+
+        voucher.setAttribute("REMOTEID", uniqueGUID);
+        voucher.setAttribute(
+          "VCHKEY",
+          "a282ccd7-4452-4ea6-8468-933b6012dabd-0000b147:000000c8"
+        );
+        voucher.setAttribute("VCHTYPE", "Sales");
+        voucher.setAttribute("ACTION", "Create");
+        voucher.setAttribute("OBJVIEW", "Invoice Voucher View");
 
         voucher.innerHTML = `
-          <DATE>${sale.date}</DATE>
-          <PARTYNAME>${sale.party}</PARTYNAME>
-          <GUID>${uniqueGUID}</GUID>
-          <GSTREGISTRATIONTYPE>Regular</GSTREGISTRATIONTYPE>
-          <GSTNATUREOFSALE>Inter State</GSTNATUREOFSALE>
-          <GSTPARTYTYPE>Regular</GSTPARTYTYPE>
-          <UDF:GSTRETURNTYPE>Regular</UDF:GSTRETURNTYPE>
-          <UDF:CONSULIEERGOODS>No</UDF:CONSULIEERGOODS>
-          <VCHENTRYMODE>Item Invoice</VCHENTRYMODE>
-        `;
+                <OLDAUDITENTRYIDS.LIST TYPE="Number">
+                    <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
+                </OLDAUDITENTRYIDS.LIST>
+                <DATE>${Dateformate}</DATE>
+                <VCHSTATUSDATE>${Dateformate}</VCHSTATUSDATE>
+                <GUID>${uniqueGUID}</GUID>
+                <GSTREGISTRATIONTYPE>Regular</GSTREGISTRATIONTYPE>
+                <VATDEALERTYPE>Regular</VATDEALERTYPE>
+                <STATENAME>Gujarat</STATENAME>
+                <COUNTRYOFRESIDENCE>India</COUNTRYOFRESIDENCE>
+                <PLACEOFSUPPLY>Gujarat</PLACEOFSUPPLY>
+                <PARTYNAME>${sale.party}</PARTYNAME>
+                <GSTREGISTRATION TAXTYPE="GST" TAXREGISTRATION="">Gujarat Registration</GSTREGISTRATION>
+                <VOUCHERTYPENAME>Sales</VOUCHERTYPENAME>
+                <PARTYLEDGERNAME>${sale.party}</PARTYLEDGERNAME>
+                <VOUCHERNUMBER>30</VOUCHERNUMBER>
+                <BASICBUYERNAME>${sale.party}</BASICBUYERNAME>
+                <CMPGSTREGISTRATIONTYPE>Regular</CMPGSTREGISTRATIONTYPE>
+                <PARTYMAILINGNAME>${sale.party}</PARTYMAILINGNAME>
+                <CONSIGNEEMAILINGNAME>${sale.party}</CONSIGNEEMAILINGNAME>
+                <CONSIGNEESTATENAME>Gujarat</CONSIGNEESTATENAME>
+                <CMPGSTSTATE>Gujarat</CMPGSTSTATE>
+                <CONSIGNEECOUNTRYNAME>India</CONSIGNEECOUNTRYNAME>
+                <BASICBASEPARTYNAME>${sale.party}</BASICBASEPARTYNAME>
+                <NUMBERINGSTYLE>Auto Retain</NUMBERINGSTYLE>
+                <CSTFORMISSUETYPE>Not Applicable</CSTFORMISSUETYPE>
+                <CSTFORMRECVTYPE>Not Applicable</CSTFORMRECVTYPE>
+                <FBTPAYMENTTYPE>Default</FBTPAYMENTTYPE>
+                <PERSISTEDVIEW>Invoice Voucher View</PERSISTEDVIEW>
+                <VCHSTATUSTAXADJUSTMENT>Default</VCHSTATUSTAXADJUSTMENT>
+                <VCHSTATUSVOUCHERTYPE>Sales</VCHSTATUSVOUCHERTYPE>
+                <VCHGSTCLASS>Not Applicable</VCHGSTCLASS>
+                <VCHENTRYMODE>Item Invoice</VCHENTRYMODE>
+            `;
 
         let grandTotal = 0;
 
@@ -58,47 +92,109 @@ const Sales = () => {
             "ALLINVENTORYENTRIES.LIST"
           );
           inventoryEntry.innerHTML = `
-            <STOCKITEMNAME>${product.product}</STOCKITEMNAME>
-            <RATE>${product.price}/nos</RATE>
-            <AMOUNT>${product.subtotal}</AMOUNT>
-            <ACTUALQTY>${product.quantity} nos</ACTUALQTY>
-            <ACCOUNTINGALLOCATIONS.LIST>
-              <AMOUNT>${product.subtotal}</AMOUNT>
-            </ACCOUNTINGALLOCATIONS.LIST>
-          `;
+                    <STOCKITEMNAME>${product.product}</STOCKITEMNAME>
+                    <GSTOVRDNISREVCHARGEAPPL>Not Applicable</GSTOVRDNISREVCHARGEAPPL>
+                    <GSTOVRDNSTOREDNATURE/>
+                    <GSTOVRDNTYPEOFSUPPLY>Goods</GSTOVRDNTYPEOFSUPPLY>
+                    <GSTRATEINFERAPPLICABILITY>As per Masters/Company</GSTRATEINFERAPPLICABILITY>
+                    <GSTHSNINFERAPPLICABILITY>As per Masters/Company</GSTHSNINFERAPPLICABILITY>
+                    <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+                    <RATE>${product.price}/nos</RATE>
+                    <AMOUNT>${product.subtotal}</AMOUNT>
+                    <ACTUALQTY>${product.quantity}nos</ACTUALQTY>
+                    <BILLEDQTY>${product.quantity}nos</BILLEDQTY>
+                    <BATCHALLOCATIONS.LIST>
+                        <GODOWNNAME>Main Location</GODOWNNAME>
+                        <BATCHNAME>Primary Batch</BATCHNAME>
+                        <TRACKINGNUMBER>Not Applicable</TRACKINGNUMBER>
+                        <AMOUNT>${product.subtotal}</AMOUNT>
+                        <ACTUALQTY>${product.quantity}nos</ACTUALQTY>
+                        <BILLEDQTY>${product.quantity}nos</BILLEDQTY>
+                    </BATCHALLOCATIONS.LIST>
+                    <ACCOUNTINGALLOCATIONS.LIST>
+                        <LEDGERNAME>Sales Ledger</LEDGERNAME>
+                        <GSTCLASS>Not Applicable</GSTCLASS>
+                        <AMOUNT>${product.subtotal}</AMOUNT>
+                    </ACCOUNTINGALLOCATIONS.LIST>
+                `;
           voucher.appendChild(inventoryEntry);
 
           // Calculate the grand total
           grandTotal += parseFloat(product.subtotal);
         });
 
-        // Create and append LEDGERENTRIES.LIST with the grand total
+        // Create and append LEDGERENTRIES.LIST with the updated layout
         const ledgerEntry = existingXML.createElement("LEDGERENTRIES.LIST");
         ledgerEntry.innerHTML = `
-          <AMOUNT>${grandTotal.toFixed(2)}</AMOUNT>
-          <BILLALLOCATIONS.LIST>
-            <AMOUNT>${grandTotal.toFixed(2)}</AMOUNT>
-          </BILLALLOCATIONS.LIST>
-        `;
+                <OLDAUDITENTRYIDS.LIST TYPE="Number">
+                    <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
+                </OLDAUDITENTRYIDS.LIST>
+                <LEDGERNAME>${sale.party}</LEDGERNAME>
+                <GSTCLASS>Not Applicable</GSTCLASS>
+                <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+                <LEDGERFROMITEM>No</LEDGERFROMITEM>
+                <REMOVEZEROENTRIES>No</REMOVEZEROENTRIES>
+                <ISPARTYLEDGER>Yes</ISPARTYLEDGER>
+                <GSTOVERRIDDEN>No</GSTOVERRIDDEN>
+                <ISGSTASSESSABLEVALUEOVERRIDDEN>No</ISGSTASSESSABLEVALUEOVERRIDDEN>
+                <STRDISGSTAPPLICABLE>No</STRDISGSTAPPLICABLE>
+                <STRDGSTISPARTYLEDGER>No</STRDGSTISPARTYLEDGER>
+                <STRDGSTISDUTYLEDGER>No</STRDGSTISDUTYLEDGER>
+                <CONTENTNEGISPOS>No</CONTENTNEGISPOS>
+                <ISLASTDEEMEDPOSITIVE>Yes</ISLASTDEEMEDPOSITIVE>
+                <ISCAPVATTAXALTERED>No</ISCAPVATTAXALTERED>
+                <ISCAPVATNOTCLAIMED>No</ISCAPVATNOTCLAIMED>
+                <AMOUNT>-${grandTotal.toFixed(2)}</AMOUNT>
+                <SERVICETAXDETAILS.LIST> </SERVICETAXDETAILS.LIST>
+                <BANKALLOCATIONS.LIST> </BANKALLOCATIONS.LIST>
+                <BILLALLOCATIONS.LIST>
+                    <NAME>30</NAME>
+                    <BILLTYPE>New Ref</BILLTYPE>
+                    <TDSDEDUCTEEISSPECIALRATE>No</TDSDEDUCTEEISSPECIALRATE>
+                    <AMOUNT>-${grandTotal.toFixed(2)}</AMOUNT>
+                    <INTERESTCOLLECTION.LIST> </INTERESTCOLLECTION.LIST>
+                    <STBILLCATEGORIES.LIST> </STBILLCATEGORIES.LIST>
+                </BILLALLOCATIONS.LIST>
+                <INTERESTCOLLECTION.LIST> </INTERESTCOLLECTION.LIST>
+                <OLDAUDITENTRIES.LIST> </OLDAUDITENTRIES.LIST>
+                <ACCOUNTAUDITENTRIES.LIST> </ACCOUNTAUDITENTRIES.LIST>
+                <AUDITENTRIES.LIST> </AUDITENTRIES.LIST>
+                <INPUTCRALLOCS.LIST> </INPUTCRALLOCS.LIST>
+                <DUTYHEADDETAILS.LIST> </DUTYHEADDETAILS.LIST>
+                <EXCISEDUTYHEADDETAILS.LIST> </EXCISEDUTYHEADDETAILS.LIST>
+                <RATEDETAILS.LIST> </RATEDETAILS.LIST>
+                <SUMMARYALLOCS.LIST> </SUMMARYALLOCS.LIST>
+                <CENVATDUTYALLOCATIONS.LIST> </CENVATDUTYALLOCATIONS.LIST>
+                <STPYMTDETAILS.LIST> </STPYMTDETAILS.LIST>
+                <EXCISEPAYMENTALLOCATIONS.LIST> </EXCISEPAYMENTALLOCATIONS.LIST>
+                <TAXBILLALLOCATIONS.LIST> </TAXBILLALLOCATIONS.LIST>
+                <TAXOBJECTALLOCATIONS.LIST> </TAXOBJECTALLOCATIONS.LIST>
+                <TDSEXPENSEALLOCATIONS.LIST> </TDSEXPENSEALLOCATIONS.LIST>
+                <VATSTATUTORYDETAILS.LIST> </VATSTATUTORYDETAILS.LIST>
+                <COSTTRACKALLOCATIONS.LIST> </COSTTRACKALLOCATIONS.LIST>
+                <REFVOUCHERDETAILS.LIST> </REFVOUCHERDETAILS.LIST>
+                <INVOICEWISEDETAILS.LIST> </INVOICEWISEDETAILS.LIST>
+                <VATITCDETAILS.LIST> </VATITCDETAILS.LIST>
+                <ADVANCETAXDETAILS.LIST> </ADVANCETAXDETAILS.LIST>
+                <TAXTYPEALLOCATIONS.LIST> </TAXTYPEALLOCATIONS.LIST>
+            `;
         voucher.appendChild(ledgerEntry);
 
-        // Append the completed voucher to TALLYMESSAGE
+        // Append the voucher to the TALLYMESSAGE tag
         tallyMessage.appendChild(voucher);
       });
 
-      // Serialize the updated XML back to string
-      const updatedXML = new XMLSerializer().serializeToString(existingXML);
-
-      // Save updated XML back to Capacitor Storage
-      await Storage.set({
-        key: "salesXML",
-        value: updatedXML,
-      });
-
+      // Serialize the XML back to string and store it in Capacitor Storage
+      const serializer = new XMLSerializer();
+      const xmlString = serializer.serializeToString(existingXML);
+      await Storage.set({ key: "salesXML", value: xmlString });
       alert("Sales data add successfully!");
-      navigator("/voucher");
+      return xmlString;
+
+      // navigator("/voucher");
     } catch (error) {
       console.error("Error saving sales data:", error);
+      return null;
     }
   };
 
@@ -228,8 +324,8 @@ const Sales = () => {
         <label htmlFor="party">Party:</label>
         <select id="party" name="party" required>
           <option value="">Select Party</option>
-          <option value="Flourish">Flourish</option>
-          <option value="Havells">Havells</option>
+          <option value="Flonix">Flonix</option>
+          <option value="Prime">Prime</option>
           <option value="SrWater">SrWater</option>
           <option value="Alpha">Alpha</option>
           <option value="Kent">Kent</option>
@@ -247,8 +343,8 @@ const Sales = () => {
                   required
                 >
                   <option value="">Select Product</option>
-                  <option value="Ro Pump">Ro Pump</option>
-                  <option value="Membrane">Membrane</option>
+                  <option value="Pump">Pump</option>
+                  <option value="Ro">Ro</option>
                 </select>
               </div>
 

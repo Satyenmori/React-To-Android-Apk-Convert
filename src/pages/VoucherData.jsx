@@ -82,9 +82,9 @@ const Voucher = () => {
       const partyName = entry.PARTYNAME.toLowerCase().startsWith(
         searchTerm.toLowerCase()
       );
-      const dateMatch = entry.DATE.includes(searchTerm);
+      // const dateMatch = entry.DATE.includes(searchTerm);
 
-      return partyName || dateMatch;
+      return partyName;
     }
   );
   // print handle
