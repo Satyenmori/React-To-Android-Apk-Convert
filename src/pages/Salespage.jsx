@@ -17,24 +17,31 @@ const Sales = () => {
   const createXML = async (sales) => {
     let existingXML;
     try {
-      
-      const { value } = await Storage.get({ key: "salesXML" });
-
-      if (value) {
-        
-        existingXML = new DOMParser().parseFromString(value, "application/xml");
+      // read the file
+      const file = await Filesystem.readFile({
+        path: "Transaction.xml",
+        directory: Directory.External,
+        encoding: Encoding.UTF8,
+      }).catch((error) => {
+        console.warn("File not found, creating a new one", error);
+        alert("File not found, creating a new one", error.message);
+        return { data: null }; 
+      });
+      const xmlContent = file.data;
+      if (xmlContent) {
+        existingXML = new DOMParser().parseFromString(
+          xmlContent,
+          "application/xml"
+        );
       } else {
-        
         existingXML = new DOMParser().parseFromString(
           `<TALLYMESSAGE xmlns:UDF="TallyUDF"></TALLYMESSAGE>`,
           "application/xml"
         );
       }
 
-      
       const tallyMessage = existingXML.querySelector("TALLYMESSAGE");
 
-      
       sales.forEach((sale) => {
         const uniqueGUID = crypto.randomUUID();
         const Dateformate = sale.date.replace(/-/g, "");
@@ -87,7 +94,6 @@ const Sales = () => {
 
         let grandTotal = 0;
 
-        
         sale.products.forEach((product) => {
           const inventoryEntry = existingXML.createElement(
             "ALLINVENTORYENTRIES.LIST"
@@ -120,11 +126,9 @@ const Sales = () => {
                 `;
           voucher.appendChild(inventoryEntry);
 
-          
           grandTotal += parseFloat(product.subtotal);
         });
 
-       
         const ledgerEntry = existingXML.createElement("LEDGERENTRIES.LIST");
         ledgerEntry.innerHTML = `
                 <OLDAUDITENTRYIDS.LIST TYPE="Number">
@@ -181,27 +185,24 @@ const Sales = () => {
             `;
         voucher.appendChild(ledgerEntry);
 
-        
         tallyMessage.appendChild(voucher);
       });
 
-      
       const serializer = new XMLSerializer();
       const xmlString = serializer.serializeToString(existingXML);
 
       let res = await Filesystem.writeFile({
         path: "Transaction.xml",
         directory: Directory.External,
-        data:xmlString,
-        encoding: "utf8",
-      });      
+        data: xmlString,
+        encoding: Encoding.UTF8,
+      });
       // await Storage.set({ key: "salesXML", value: xmlString });
-      alert("Sales data add successfully!",res.uri);
-      return xmlString;
-
-      // navigator("/voucher");
+      alert("Sales data add In Folder!", res.uri);
+      return xmlString;      
     } catch (error) {
       console.error("Error saving sales data:", error);
+      alert("Error Saving Sales Data", error);
       return null;
     }
   };
@@ -213,7 +214,6 @@ const Sales = () => {
     newEntries[index].product = value;
 
     if (selectedParty && value) {
-      
       const { price, quantity } = await fetchProductDetails(
         selectedParty,
         value
@@ -266,7 +266,6 @@ const Sales = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-   
     const party = event.target.party.value;
     const date = event.target.date.value;
 
@@ -277,7 +276,6 @@ const Sales = () => {
       subtotal: entry.subtotal,
     }));
 
-   
     const sales = [
       {
         date,
@@ -288,12 +286,10 @@ const Sales = () => {
     await createXML(sales);
 
     try {
-      
       await saveSalesData(party, products);
 
       alert("Sales data has been saved to the database successfully!");
 
-      
       navigator("/voucher");
     } catch (error) {
       console.error("Error saving sales data to SQLite:", error);
@@ -405,7 +401,7 @@ const Sales = () => {
         <div className="btn-group">
           <button className="button-17" type="submit" role="button">
             Submit
-          </button>          
+          </button>
         </div>
       </form>
     </div>
