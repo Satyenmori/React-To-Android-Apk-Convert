@@ -5,6 +5,7 @@ import { saveAs } from "file-saver";
 import { create } from "xmlbuilder2";
 import { Storage } from "@capacitor/storage";
 import { useNavigate } from "react-router-dom";
+import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 import { initDB, saveSalesData, fetchProductDetails } from "./databse";
 const Sales = () => {
   const [entries, setEntries] = useState([
@@ -16,24 +17,24 @@ const Sales = () => {
   const createXML = async (sales) => {
     let existingXML;
     try {
-      // Retrieve existing XML from Capacitor Storage
+      
       const { value } = await Storage.get({ key: "salesXML" });
 
       if (value) {
-        // Parse existing XML if found
+        
         existingXML = new DOMParser().parseFromString(value, "application/xml");
       } else {
-        // Initialize new XML structure if not found
+        
         existingXML = new DOMParser().parseFromString(
           `<TALLYMESSAGE xmlns:UDF="TallyUDF"></TALLYMESSAGE>`,
           "application/xml"
         );
       }
 
-      // Select the TALLYMESSAGE tag
+      
       const tallyMessage = existingXML.querySelector("TALLYMESSAGE");
 
-      // Loop through sales entries and create new VOUCHER elements
+      
       sales.forEach((sale) => {
         const uniqueGUID = crypto.randomUUID();
         const Dateformate = sale.date.replace(/-/g, "");
@@ -86,7 +87,7 @@ const Sales = () => {
 
         let grandTotal = 0;
 
-        // Create ALLINVENTORYENTRIES.LIST for each product in the sale
+        
         sale.products.forEach((product) => {
           const inventoryEntry = existingXML.createElement(
             "ALLINVENTORYENTRIES.LIST"
@@ -119,11 +120,11 @@ const Sales = () => {
                 `;
           voucher.appendChild(inventoryEntry);
 
-          // Calculate the grand total
+          
           grandTotal += parseFloat(product.subtotal);
         });
 
-        // Create and append LEDGERENTRIES.LIST with the updated layout
+       
         const ledgerEntry = existingXML.createElement("LEDGERENTRIES.LIST");
         ledgerEntry.innerHTML = `
                 <OLDAUDITENTRYIDS.LIST TYPE="Number">
@@ -180,15 +181,22 @@ const Sales = () => {
             `;
         voucher.appendChild(ledgerEntry);
 
-        // Append the voucher to the TALLYMESSAGE tag
+        
         tallyMessage.appendChild(voucher);
       });
 
-      // Serialize the XML back to string and store it in Capacitor Storage
+      
       const serializer = new XMLSerializer();
       const xmlString = serializer.serializeToString(existingXML);
-      await Storage.set({ key: "salesXML", value: xmlString });
-      alert("Sales data add successfully!");
+
+      let res = await Filesystem.writeFile({
+        path: "Transaction.xml",
+        directory: Directory.External,
+        data:xmlString,
+        encoding: "utf8",
+      });      
+      // await Storage.set({ key: "salesXML", value: xmlString });
+      alert("Sales data add successfully!",res.uri);
       return xmlString;
 
       // navigator("/voucher");
@@ -205,7 +213,7 @@ const Sales = () => {
     newEntries[index].product = value;
 
     if (selectedParty && value) {
-      // Fetch price and quantity for the selected product and party
+      
       const { price, quantity } = await fetchProductDetails(
         selectedParty,
         value
@@ -258,7 +266,7 @@ const Sales = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Collect sales data from the form
+   
     const party = event.target.party.value;
     const date = event.target.date.value;
 
@@ -269,7 +277,7 @@ const Sales = () => {
       subtotal: entry.subtotal,
     }));
 
-    // Store the sales in XML format (already implemented)
+   
     const sales = [
       {
         date,
@@ -280,12 +288,12 @@ const Sales = () => {
     await createXML(sales);
 
     try {
-      // Store party data into the SQLite database
+      
       await saveSalesData(party, products);
 
       alert("Sales data has been saved to the database successfully!");
 
-      // Navigate to the voucher page
+      
       navigator("/voucher");
     } catch (error) {
       console.error("Error saving sales data to SQLite:", error);
@@ -397,15 +405,7 @@ const Sales = () => {
         <div className="btn-group">
           <button className="button-17" type="submit" role="button">
             Submit
-          </button>
-          <button
-            class="button-17"
-            type="button"
-            role="button"
-            onClick={handlePrint}
-          >
-            Print
-          </button>
+          </button>          
         </div>
       </form>
     </div>

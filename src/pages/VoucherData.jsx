@@ -15,14 +15,22 @@ const Voucher = () => {
   useEffect(() => {
     const loadFileContent = async () => {
       try {
-        const { value } = await Storage.get({ key: "salesXML" });
+        // Fetch the XML file from the filesystem
+        const file = await Filesystem.readFile({
+          path: "Transaction.xml",
+          directory: Directory.External,
+          encoding: Encoding.UTF8,
+        });
 
-        if (value) {
+        const xmlContent = file.data; // The actual XML string
+
+        if (xmlContent) {
+          // Parse XML content to JSON
           const parser = new XMLParser({
             ignoreAttributes: false,
             ignoreTextNodeAttr: true,
           });
-          const json = parser.parse(value);
+          const json = parser.parse(xmlContent);
           const vouchers = json.TALLYMESSAGE?.VOUCHER;
           if (vouchers && !Array.isArray(vouchers)) {
             json.TALLYMESSAGE.VOUCHER = [vouchers];
@@ -36,6 +44,7 @@ const Voucher = () => {
         console.error("Error loading file content:", error);
       }
     };
+
     loadFileContent();
   }, []);
 
@@ -61,7 +70,13 @@ const Voucher = () => {
       const updatedXML = builder.build(updatedJsonContent);
 
       // Store the updated XML back to local storage
-      await Storage.set({ key: "salesXML", value: updatedXML });
+      // await Storage.set({ key: "salesXML", value: updatedXML });
+      await Filesystem.writeFile({
+        path: "Transaction.xml",
+        data: updatedXML,
+        directory: Directory.External,
+        encoding: Encoding.UTF8,
+      });
 
       // Update state
       setJsonContent(updatedJsonContent);
@@ -69,7 +84,7 @@ const Voucher = () => {
       // sql data delete
       await deleteVoucher(party);
 
-      alert("Voucher deleted successfully from LS and SQL.");
+      alert("Voucher deleted successfully from File and SQL.");
     } catch (error) {
       console.error("Error deleting voucher:", error);
       alert("Error deleting voucher: " + error.message);
@@ -89,29 +104,35 @@ const Voucher = () => {
   );
   // print handle
   const handlePrint = async () => {
-    const { value: xmlData } = await Storage.get({ key: "salesXML" });
-    if (!xmlData) {
-      alert("No sales data available to print.");
-      return;
-    }
-    const isMobile = window.Capacitor?.isNativePlatform();
+    try {
+      const file = await Filesystem.readFile({
+        path: "Transaction.xml",
+        directory: Directory.External,
+        encoding: Encoding.UTF8,
+      });
+      const xmlData = file.data;
 
-    if (isMobile) {
-      try {
-        await Filesystem.writeFile({
-          path: "File1.xml",
-          data: xmlData,
-          directory: Directory.External,
-          encoding: Encoding.UTF8,
-        });
-        alert("File downloaded successfully to mobile device!");
-      } catch (error) {
-        console.error("Error saving file on mobile:", error);
-        alert("Error downloading file on mobile: " + error.message);
+      const isMobile = window.Capacitor?.isNativePlatform();
+
+      if (isMobile) {
+        try {
+          await Filesystem.writeFile({
+            path: "File1.xml",
+            data: xmlData,
+            directory: Directory.External,
+            encoding: Encoding.UTF8,
+          });
+          alert("File downloaded successfully to mobile device!");
+        } catch (error) {
+          console.error("Error saving file on mobile:", error);
+          alert("Error downloading file on mobile: " + error.message);
+        }
+      } else {
+        const blob = new Blob([xmlData], { type: "application/xml" });
+        saveAs(blob, "File1.xml");
       }
-    } else {
-      const blob = new Blob([xmlData], { type: "application/xml" });
-      saveAs(blob, "File1.xml");
+    } catch (error) {
+      alert("No sales data available to print.");
     }
   };
 
