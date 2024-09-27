@@ -122,19 +122,61 @@ const EditSales = () => {
           const formattedDate = rawDate.replace(/-/g, "");
           updatedVoucher.DATE = formattedDate;
           updatedVoucher.VCHSTATUSDATE = formattedDate;
-          updatedVoucher.PARTYNAME = document.getElementById("party").value;
+          const partyName = document.getElementById("party").value;
+          updatedVoucher.PARTYNAME = partyName;
 
-          updatedVoucher["ALLINVENTORYENTRIES.LIST"] = entries.map((entry) => ({
-            ...updatedVoucher["ALLINVENTORYENTRIES.LIST"],
-            STOCKITEMNAME: entry.product,
-            RATE: `${entry.price}/Nos`,
-            ACTUALQTY: `${entry.quantity} Nos`,
-            AMOUNT: entry.subtotal,
-          }));
-          
+          // Update all related party fields
+          const partyFields = [
+            "PARTYLEDGERNAME",
+            "BASICBUYERNAME",
+            "PARTYMAILINGNAME",
+            "CONSIGNEEMAILINGNAME",
+            "BASICBASEPARTYNAME",
+          ];
+
+          partyFields.forEach((field) => {
+            if (updatedVoucher[field] !== undefined) {
+              updatedVoucher[field] = partyName;
+            }
+          });
+
+          updatedVoucher["ALLINVENTORYENTRIES.LIST"] = entries.map((entry) => {
+            // Update root-level fields in ALLINVENTORYENTRIES.LIST
+            const inventoryEntry = {
+              ...updatedVoucher["ALLINVENTORYENTRIES.LIST"],
+              STOCKITEMNAME: entry.product,
+              RATE: `${entry.price}/Nos`,
+              ACTUALQTY: `${entry.quantity} Nos`,
+              BILLEDQTY: `${entry.quantity} Nos`,
+              AMOUNT: entry.subtotal,
+            };
+
+            // Update BATCHALLOCATIONS.LIST nested fields
+            if (inventoryEntry["BATCHALLOCATIONS.LIST"]) {
+              inventoryEntry[
+                "BATCHALLOCATIONS.LIST"
+              ].ACTUALQTY = `${entry.quantity} Nos`;
+              inventoryEntry[
+                "BATCHALLOCATIONS.LIST"
+              ].BILLEDQTY = `${entry.quantity} Nos`;
+              inventoryEntry["BATCHALLOCATIONS.LIST"].AMOUNT = entry.subtotal;
+            }
+
+            // Update ACCOUNTINGALLOCATIONS.LIST nested fields
+            if (inventoryEntry["ACCOUNTINGALLOCATIONS.LIST"]) {
+              inventoryEntry["ACCOUNTINGALLOCATIONS.LIST"].AMOUNT =
+                entry.subtotal;
+            }
+
+            return inventoryEntry;
+          });
+
           const grandTotal = getGrandTotal();
           if (updatedVoucher["LEDGERENTRIES.LIST"]) {
             const ledgerEntries = updatedVoucher["LEDGERENTRIES.LIST"];
+            if (ledgerEntries.LEDGERNAME !== undefined) {
+              ledgerEntries.LEDGERNAME = partyName;
+            }
             ledgerEntries.AMOUNT = `-${grandTotal}`;
             if (ledgerEntries["BILLALLOCATIONS.LIST"]) {
               ledgerEntries["BILLALLOCATIONS.LIST"].AMOUNT = `-${grandTotal}`;
