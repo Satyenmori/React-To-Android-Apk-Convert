@@ -24,7 +24,7 @@ const Sales = () => {
         encoding: Encoding.UTF8,
       }).catch((error) => {
         console.warn("File not found, creating a new one", error);
-        alert("File not found, creating a new one", error.message);
+        // alert("File not found, creating a new one", error.message);
         return { data: null }; 
       });
       const xmlContent = file.data;
@@ -108,15 +108,15 @@ const Sales = () => {
                     <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
                     <RATE>${product.price}/nos</RATE>
                     <AMOUNT>${product.subtotal}</AMOUNT>
-                    <ACTUALQTY>${product.quantity}nos</ACTUALQTY>
-                    <BILLEDQTY>${product.quantity}nos</BILLEDQTY>
+                    <ACTUALQTY>${product.quantity} nos</ACTUALQTY>
+                    <BILLEDQTY>${product.quantity} nos</BILLEDQTY>
                     <BATCHALLOCATIONS.LIST>
                         <GODOWNNAME>Main Location</GODOWNNAME>
                         <BATCHNAME>Primary Batch</BATCHNAME>
                         <TRACKINGNUMBER>Not Applicable</TRACKINGNUMBER>
                         <AMOUNT>${product.subtotal}</AMOUNT>
-                        <ACTUALQTY>${product.quantity}nos</ACTUALQTY>
-                        <BILLEDQTY>${product.quantity}nos</BILLEDQTY>
+                        <ACTUALQTY>${product.quantity} nos</ACTUALQTY>
+                        <BILLEDQTY>${product.quantity} nos</BILLEDQTY>
                     </BATCHALLOCATIONS.LIST>
                     <ACCOUNTINGALLOCATIONS.LIST>
                         <LEDGERNAME>Sales Ledger</LEDGERNAME>
@@ -198,7 +198,7 @@ const Sales = () => {
         encoding: Encoding.UTF8,
       });
       // await Storage.set({ key: "salesXML", value: xmlString });
-      alert("Sales data add In Folder!", res.uri);
+      // alert("Sales data add In Folder!", res.uri);
       return xmlString;      
     } catch (error) {
       console.error("Error saving sales data:", error);
@@ -330,9 +330,6 @@ const Sales = () => {
           <option value="">Select Party</option>
           <option value="Flonix">Flonix</option>
           <option value="Prime">Prime</option>
-          <option value="SrWater">SrWater</option>
-          <option value="Alpha">Alpha</option>
-          <option value="Kent">Kent</option>
         </select>
         {entries.map((entry, index) => (
           <div key={index} className="entry-group">
