@@ -140,36 +140,39 @@ const EditSales = () => {
             }
           });
 
-          updatedVoucher["ALLINVENTORYENTRIES.LIST"] = entries.map((entry) => {
-            // Update root-level fields in ALLINVENTORYENTRIES.LIST
-            const inventoryEntry = {
-              ...updatedVoucher["ALLINVENTORYENTRIES.LIST"],
-              STOCKITEMNAME: entry.product,
-              RATE: `${entry.price}/Nos`,
-              ACTUALQTY: `${entry.quantity} Nos`,
-              BILLEDQTY: `${entry.quantity} Nos`,
-              AMOUNT: entry.subtotal,
-            };
+          updatedVoucher["ALLINVENTORYENTRIES.LIST"] = entries.map(
+            (entry, index) => {
+              const existingInventoryEntry =
+                updatedVoucher["ALLINVENTORYENTRIES.LIST"][index] || {};
 
-            // Update BATCHALLOCATIONS.LIST nested fields
-            if (inventoryEntry["BATCHALLOCATIONS.LIST"]) {
-              inventoryEntry[
-                "BATCHALLOCATIONS.LIST"
-              ].ACTUALQTY = `${entry.quantity} Nos`;
-              inventoryEntry[
-                "BATCHALLOCATIONS.LIST"
-              ].BILLEDQTY = `${entry.quantity} Nos`;
-              inventoryEntry["BATCHALLOCATIONS.LIST"].AMOUNT = entry.subtotal;
+              const inventoryEntry = {
+                ...existingInventoryEntry,
+                STOCKITEMNAME: entry.product,
+                RATE: `${entry.price}/Nos`,
+                ACTUALQTY: `${entry.quantity} Nos`,
+                BILLEDQTY: `${entry.quantity} Nos`,
+                AMOUNT: entry.subtotal,
+              };
+
+              if (existingInventoryEntry["BATCHALLOCATIONS.LIST"]) {
+                inventoryEntry["BATCHALLOCATIONS.LIST"] = {
+                  ...existingInventoryEntry["BATCHALLOCATIONS.LIST"],
+                  ACTUALQTY: `${entry.quantity} Nos`,
+                  BILLEDQTY: `${entry.quantity} Nos`,
+                  AMOUNT: entry.subtotal,
+                };
+              }
+
+              if (existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"]) {
+                inventoryEntry["ACCOUNTINGALLOCATIONS.LIST"] = {
+                  ...existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"],
+                  AMOUNT: entry.subtotal,
+                };
+              }
+
+              return inventoryEntry;
             }
-
-            // Update ACCOUNTINGALLOCATIONS.LIST nested fields
-            if (inventoryEntry["ACCOUNTINGALLOCATIONS.LIST"]) {
-              inventoryEntry["ACCOUNTINGALLOCATIONS.LIST"].AMOUNT =
-                entry.subtotal;
-            }
-
-            return inventoryEntry;
-          });
+          );
 
           const grandTotal = getGrandTotal();
           if (updatedVoucher["LEDGERENTRIES.LIST"]) {
