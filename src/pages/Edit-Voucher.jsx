@@ -145,32 +145,28 @@ const EditSales = () => {
               const existingInventoryEntry =
                 updatedVoucher["ALLINVENTORYENTRIES.LIST"][index] || {};
 
-              const inventoryEntry = {
+              const updatedInventoryEntry = {
                 ...existingInventoryEntry,
                 STOCKITEMNAME: entry.product,
                 RATE: `${entry.price}/Nos`,
                 ACTUALQTY: `${entry.quantity} Nos`,
                 BILLEDQTY: `${entry.quantity} Nos`,
                 AMOUNT: entry.subtotal,
-              };
 
-              if (existingInventoryEntry["BATCHALLOCATIONS.LIST"]) {
-                inventoryEntry["BATCHALLOCATIONS.LIST"] = {
+                "BATCHALLOCATIONS.LIST": {
                   ...existingInventoryEntry["BATCHALLOCATIONS.LIST"],
                   ACTUALQTY: `${entry.quantity} Nos`,
-                  BILLEDQTY: `${entry.quantity} Nos`,
+                  BILLEDQTY: `${entry.quantity} Nos`, 
                   AMOUNT: entry.subtotal,
-                };
-              }
+                },
 
-              if (existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"]) {
-                inventoryEntry["ACCOUNTINGALLOCATIONS.LIST"] = {
+                "ACCOUNTINGALLOCATIONS.LIST": {
                   ...existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"],
                   AMOUNT: entry.subtotal,
-                };
-              }
+                },
+              };
 
-              return inventoryEntry;
+              return updatedInventoryEntry;
             }
           );
 
