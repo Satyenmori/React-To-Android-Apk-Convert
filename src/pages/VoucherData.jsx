@@ -94,12 +94,8 @@ const Voucher = () => {
   // Handle search filtering
   const filteredEntries = jsonContent?.TALLYMESSAGE?.VOUCHER?.filter(
     (entry) => {
-      const partyName = entry.PARTYNAME.toLowerCase().startsWith(
-        searchTerm.toLowerCase()
-      );
-      // const dateMatch = entry.DATE.includes(searchTerm);
-
-      return partyName;
+      const partyName = entry.PARTYLEDGERNAME ? entry.PARTYLEDGERNAME.toLowerCase() : "";
+      return partyName.startsWith(searchTerm.toLowerCase());
     }
   );
   // print handle
@@ -189,7 +185,7 @@ const Voucher = () => {
                   <tr key={index}>
                     <td>{index + 1}</td>
                     <td>{entry.DATE}</td>
-                    <td>{entry.PARTYNAME}</td>
+                    <td>{entry.PARTYLEDGERNAME}</td>
                     <td>{itemCount} Product</td>
                     <td>{ledgerAmount}</td>
 
