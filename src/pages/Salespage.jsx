@@ -106,17 +106,17 @@ const Sales = () => {
                     <GSTRATEINFERAPPLICABILITY>As per Masters/Company</GSTRATEINFERAPPLICABILITY>
                     <GSTHSNINFERAPPLICABILITY>As per Masters/Company</GSTHSNINFERAPPLICABILITY>
                     <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
-                    <RATE>${product.price}/nos</RATE>
+                    <RATE>${product.price}/pcs</RATE>
                     <AMOUNT>${product.subtotal}</AMOUNT>
-                    <ACTUALQTY>${product.quantity} nos</ACTUALQTY>
-                    <BILLEDQTY>${product.quantity} nos</BILLEDQTY>
+                    <ACTUALQTY>${product.quantity} pcs</ACTUALQTY>
+                    <BILLEDQTY>${product.quantity} pcs</BILLEDQTY>
                     <BATCHALLOCATIONS.LIST>
                         <GODOWNNAME>Main Location</GODOWNNAME>
                         <BATCHNAME>Primary Batch</BATCHNAME>
                         <TRACKINGNUMBER>Not Applicable</TRACKINGNUMBER>
                         <AMOUNT>${product.subtotal}</AMOUNT>
-                        <ACTUALQTY>${product.quantity} nos</ACTUALQTY>
-                        <BILLEDQTY>${product.quantity} nos</BILLEDQTY>
+                        <ACTUALQTY>${product.quantity} pcs</ACTUALQTY>
+                        <BILLEDQTY>${product.quantity} pcs</BILLEDQTY>
                     </BATCHALLOCATIONS.LIST>
                     <ACCOUNTINGALLOCATIONS.LIST>
                         <LEDGERNAME>Sales Ledger</LEDGERNAME>
@@ -328,8 +328,8 @@ const Sales = () => {
         <label htmlFor="party">Party:</label>
         <select id="party" name="party" required>
           <option value="">Select Party</option>
-          <option value="Flonix">Flonix</option>
-          <option value="Prime">Prime</option>
+          <option value="MAHAKALI">MAHAKALI</option>
+          <option value="Dhavalbhai">Dhavalbhai</option>
         </select>
         {entries.map((entry, index) => (
           <div key={index} className="entry-group">
@@ -344,8 +344,8 @@ const Sales = () => {
                   required
                 >
                   <option value="">Select Product</option>
-                  <option value="Pump">Pump</option>
-                  <option value="Ro">Ro</option>
+                  <option value="PUMP BNQS 150">PUMP BNQS 150</option>
+                  <option value="PUMP BNQS 300 GPD">PUMP BNQS 300 GPD</option>
                 </select>
               </div>
 
