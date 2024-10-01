@@ -123,7 +123,7 @@ const EditSales = () => {
           updatedVoucher.DATE = formattedDate;
           updatedVoucher.VCHSTATUSDATE = formattedDate;
           const partyName = document.getElementById("party").value;
-          updatedVoucher.PARTYNAME = partyName;
+          updatedVoucher.PARTYLEDGERNAME = partyName;
 
           // Update all related party fields
           const partyFields = [
@@ -148,15 +148,15 @@ const EditSales = () => {
               const updatedInventoryEntry = {
                 ...existingInventoryEntry,
                 STOCKITEMNAME: entry.product,
-                RATE: `${entry.price}/Nos`,
-                ACTUALQTY: `${entry.quantity} Nos`,
-                BILLEDQTY: `${entry.quantity} Nos`,
+                RATE: `${entry.price}/pcs`,
+                ACTUALQTY: `${entry.quantity} pcs`,
+                BILLEDQTY: `${entry.quantity} pcs`,
                 AMOUNT: entry.subtotal,
 
                 "BATCHALLOCATIONS.LIST": {
                   ...existingInventoryEntry["BATCHALLOCATIONS.LIST"],
-                  ACTUALQTY: `${entry.quantity} Nos`,
-                  BILLEDQTY: `${entry.quantity} Nos`, 
+                  ACTUALQTY: `${entry.quantity} pcs`,
+                  BILLEDQTY: `${entry.quantity} pcs`, 
                   AMOUNT: entry.subtotal,
                 },
 
@@ -192,7 +192,7 @@ const EditSales = () => {
           });
 
           //call the DB update function
-          const party = updatedVoucher.PARTYNAME;
+          const party = updatedVoucher.PARTYLEDGERNAME;
           const date = updatedVoucher.DATE;
           const products = entries.map((entry) => ({
             product: entry.product,
@@ -233,13 +233,13 @@ const EditSales = () => {
           id="party"
           name="party"
           required
-          defaultValue={initialData?.PARTYNAME || "NA"}
+          defaultValue={initialData?.PARTYLEDGERNAME || "NA"}
         >
-          <option value={initialData?.PARTYNAME || "NA"}>
-            {initialData?.PARTYNAME || "NA"}
+          <option value={initialData?.PARTYLEDGERNAME || "NA"}>
+            {initialData?.PARTYLEDGERNAME || "NA"}
           </option>
-          <option value="Flonix">Flonix</option>
-          <option value="Prime">Prime</option>
+          <option value="MAHAKALI">MAHAKALI</option>
+          <option value="Dhavalbhai">Dhavalbhai</option>
         </select>
 
         {entries.map((entry, index) => (
@@ -257,8 +257,8 @@ const EditSales = () => {
                   <option value={entry.product || ""}>
                     {entry.product || ""}
                   </option>
-                  <option value="Pump">Pump</option>
-                  <option value="Ro">Ro</option>
+                  <option value="PUMP BNQS 150">PUMP BNQS 150</option>
+                  <option value="PUMP BNQS 300 GPD">PUMP BNQS 300 GPD</option>
                 </select>
               </div>
 

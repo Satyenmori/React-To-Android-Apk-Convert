@@ -15,14 +15,14 @@ const Voucher = () => {
   useEffect(() => {
     const loadFileContent = async () => {
       try {
-        // Fetch the XML file from the filesystem
+        
         const file = await Filesystem.readFile({
           path: "Transaction.xml",
           directory: Directory.External,
           encoding: Encoding.UTF8,
         });
 
-        const xmlContent = file.data; // The actual XML string
+        const xmlContent = file.data;
 
         if (xmlContent) {
           // Parse XML content to JSON
