@@ -5,7 +5,7 @@ import "../Style/Voucherdata.css";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { saveAs } from "file-saver";
-import { deleteVoucher } from "./databse";
+import { deleteVoucher, getAllLanguageNames } from "./databse";
 import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 
 const Voucher = () => {
@@ -15,7 +15,6 @@ const Voucher = () => {
   useEffect(() => {
     const loadFileContent = async () => {
       try {
-        
         const file = await Filesystem.readFile({
           path: "Transaction.xml",
           directory: Directory.External,
@@ -94,7 +93,9 @@ const Voucher = () => {
   // Handle search filtering
   const filteredEntries = jsonContent?.TALLYMESSAGE?.VOUCHER?.filter(
     (entry) => {
-      const partyName = entry.PARTYLEDGERNAME ? entry.PARTYLEDGERNAME.toLowerCase() : "";
+      const partyName = entry.PARTYLEDGERNAME
+        ? entry.PARTYLEDGERNAME.toLowerCase()
+        : "";
       return partyName.startsWith(searchTerm.toLowerCase());
     }
   );
@@ -131,12 +132,15 @@ const Voucher = () => {
       alert("No sales data available to print.");
     }
   };
-
+  // const fetchLanguageNames = async () => {
+  //   const languageNames = await getAllLanguageNames();
+  //   alert("Partyname from DB:", languageNames);
+  // };
+  // fetchLanguageNames();
   return (
     <div className="container">
       <h2 style={{ color: "black", textAlign: "center" }}>VOUCHER DATA</h2>
-
-      {/* Top section with "Add New Form" button and Search Bar */}
+      
       <div className="top-bar">
         <div className="left">
           <Link to="/sales">

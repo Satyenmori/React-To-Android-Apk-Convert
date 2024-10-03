@@ -7,11 +7,60 @@ import { Storage } from "@capacitor/storage";
 import { useNavigate } from "react-router-dom";
 import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 import { initDB, saveSalesData, fetchProductDetails } from "./databse";
+const CustomSelectBox = ({ options, onChange }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedParty, setSelectedParty] = useState("");
+
+  const filteredOptions = options.filter((option) =>
+    option.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSelect = (option) => {
+    setSelectedParty(option);
+    setShowDropdown(false);
+    onChange(option);
+  };
+
+  return (
+    <div className="custom-select-container">
+      <input
+        type="text"
+        placeholder="Select Party"
+        value={selectedParty}
+        onClick={() => setShowDropdown(!showDropdown)}
+        onChange={(e) => {
+          setSelectedParty(e.target.value);
+          setSearchTerm(e.target.value);
+        }}
+        className="custom-select-input"
+      />
+
+      {showDropdown && (
+        <ul className="custom-select-dropdown">
+          {filteredOptions.map((option, index) => (
+            <li
+              key={index}
+              onClick={() => handleSelect(option)}
+              className="custom-select-option"
+            >
+              {option}
+            </li>
+          ))}
+          {filteredOptions.length === 0 && (
+            <li className="custom-select-no-option">No options found</li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+};
 const Sales = () => {
   const [entries, setEntries] = useState([
     { product: "", price: "", quantity: "", subtotal: "" },
   ]);
-  const [parties, setParties] = useState([]);
+  const [party, setParty] = useState("");
+  const parties = ["MAHAKALI", "Dhavalbhai", "Party A", "Party B"];
   const navigator = useNavigate();
 
   const createXML = async (sales) => {
@@ -25,7 +74,7 @@ const Sales = () => {
       }).catch((error) => {
         console.warn("File not found, creating a new one", error);
         // alert("File not found, creating a new one", error.message);
-        return { data: null }; 
+        return { data: null };
       });
       const xmlContent = file.data;
       if (xmlContent) {
@@ -263,7 +312,7 @@ const Sales = () => {
       });
       // await Storage.set({ key: "salesXML", value: xmlString });
       // alert("Sales data add In Folder!", res.uri);
-      return xmlString;      
+      return xmlString;
     } catch (error) {
       console.error("Error saving sales data:", error);
       alert("Error Saving Sales Data", error);
@@ -272,16 +321,16 @@ const Sales = () => {
   };
 
   const handleProductChange = async (index, value) => {
-    const selectedParty = document.getElementById("party").value;
+    if (!party) {
+      alert("Please select a party first.");
+      return;
+    }
 
     const newEntries = [...entries];
     newEntries[index].product = value;
 
-    if (selectedParty && value) {
-      const { price, quantity } = await fetchProductDetails(
-        selectedParty,
-        value
-      );
+    if (value) {
+      const { price, quantity } = await fetchProductDetails(party, value);
       newEntries[index].price = price || "";
       newEntries[index].quantity = quantity || "";
       newEntries[index].subtotal = (
@@ -330,7 +379,7 @@ const Sales = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const party = event.target.party.value;
+    // const party = event.target.party.value;
     const date = event.target.date.value;
 
     const products = entries.map((entry) => ({
@@ -390,11 +439,11 @@ const Sales = () => {
         <input type="date" id="date" name="date" required />
 
         <label htmlFor="party">Party:</label>
-        <select id="party" name="party" required>
-          <option value="">Select Party</option>
-          <option value="MAHAKALI">MAHAKALI</option>
-          <option value="Dhavalbhai">Dhavalbhai</option>
-        </select>
+        <CustomSelectBox
+          options={parties}
+          onChange={(selectedParty) => setParty(selectedParty)}
+        />
+        {/* <p>Selected Party: {party}</p> */}
         {entries.map((entry, index) => (
           <div key={index} className="entry-group">
             <div className="entry-fields">
@@ -405,7 +454,6 @@ const Sales = () => {
                   name={`product-${index}`}
                   value={entry.product}
                   onChange={(e) => handleProductChange(index, e.target.value)}
-                  required
                 >
                   <option value="">Select Product</option>
                   <option value="PUMP BNQS 150">PUMP BNQS 150</option>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Storage } from "@capacitor/storage";
 import "../Style/Import.css";
 import importImage from "../images/import1.png";
+import { getAllLanguageNames, saveLanguageNames } from "./databse";
 
 function XmlFileRead() {
   const [fileInfos, setFileInfos] = useState([
@@ -75,15 +76,42 @@ function XmlFileRead() {
     try {
       const reader = new FileReader();
       reader.onload = async () => {
-        const fileData = {
-          name: file.name,
-          content: reader.result,
-          dateTime: dateTime,
-        };
-        await Storage.set({
-          key: key,
-          value: JSON.stringify(fileData),
-        });
+        let content = reader.result;
+
+        content = content.replace(/\r\n/g, "").replace(/\s+/g, " ");
+
+        const languageListMatches = [
+          ...content.matchAll(
+            /<LANGUAGENAME\.LIST>(.*?)<\/LANGUAGENAME\.LIST>/g
+          ),
+        ];
+
+        if (languageListMatches.length > 0) {
+          let allNames = [];
+
+          languageListMatches.forEach((match) => {
+            const languageListContent = match[1];
+
+            const nameMatches = [
+              ...languageListContent.matchAll(/<NAME>(.*?)<\/NAME>/g),
+            ].map((nameMatch) => nameMatch[1]);
+
+            allNames = allNames.concat(nameMatches);
+          });
+
+          // Party Name Store database
+          await saveLanguageNames(allNames);
+          console.log("Party Names:", allNames);
+
+          allNames.forEach((name) => {
+            console.log("Language Name:", name);
+          });
+
+          const value = JSON.stringify(allNames);
+          console.log("File Read Json Value", value);
+        } else {
+          console.log("No <LANGUAGENAME.LIST> found.");
+        }
       };
       reader.onerror = (err) => {
         console.error("Error reading file:", err);
@@ -96,6 +124,7 @@ function XmlFileRead() {
     }
   };
 
+  
   return (
     <div className="main">
       <img src={importImage} alt="Import img" className="import-image" />

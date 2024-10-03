@@ -35,6 +35,15 @@ export const initDB = async () => {
     `;
     await db.execute(createSalesItemsTableQuery);
 
+    // Create Partyname table
+    const createPartynameTableQuery = `
+      CREATE TABLE IF NOT EXISTS partyname (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL
+      );
+    `;
+    await db.execute(createPartynameTableQuery);
+
     await sqliteConnection.closeConnection("mydb");
     // alert("Sales and Sales Items tables created successfully");
   } catch (err) {
@@ -223,3 +232,63 @@ export const deleteVoucher = async (party) => {
     throw new Error("Failed to delete data from SQLite: " + err.message);
   }
 };
+
+// Party name store
+// Save extracted language names to the SQLite database
+export const saveLanguageNames = async (languageNames) => {
+  try {
+    const db = await sqliteConnection.createConnection(
+      "mydb",
+      false,
+      "no-encryption",
+      1
+    );
+    await db.open();
+
+    // Insert each language name into the languages table
+    for (const name of languageNames) {
+      const insertLanguageQuery = `INSERT INTO partyname (name) VALUES (?);`;
+      await db.run(insertLanguageQuery, [name]);
+    }
+    
+    alert("Party names saved successfully to SQLite!");
+
+    await sqliteConnection.closeConnection("mydb");
+  } catch (err) {
+    console.error("Failed to save Partyname names:", err);
+    alert("Failed to save Partyname names: " + err.message);
+  }
+};
+
+// get all partynames
+// export const getAllLanguageNames = async () => {
+//   try {
+//     const db = await sqliteConnection.createConnection(
+//       "mydb",
+//       false,
+//       "no-encryption",
+//       1
+//     );
+//     await db.open();
+
+//     // Query to select all language names
+//     const selectAllLanguagesQuery = `SELECT name FROM partyname;`;
+//     const result = await db.query(selectAllLanguagesQuery);
+
+//     if (result.values && result.values.length > 0) {
+//       const languageNames = result.values.map(row => row.name);
+//       alert("Retrieved partyname names:", languageNames);
+//       return languageNames;
+//     } else {
+//       console.log("No partyname names found.");
+//       alert("No partyname names found.");
+//       // return [];
+//     }
+
+//     await sqliteConnection.closeConnection("mydb");
+//   } catch (err) {
+//     console.error("Failed to retrieve language names:", err);
+//     alert("Failed to retrieve language names: " + err.message);
+//     return [];
+//   }
+// };
