@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Storage } from "@capacitor/storage";
 import "../Style/Import.css";
 import importImage from "../images/import1.png";
-import { getAllLanguageNames, saveLanguageNames } from "./databse";
+import { getAllLanguageNames, initDB, saveLanguageNames } from "./databse";
 
 function XmlFileRead() {
   const [fileInfos, setFileInfos] = useState([
@@ -100,8 +100,7 @@ function XmlFileRead() {
           });
 
           // Party Name Store database
-          await saveLanguageNames(allNames);
-          console.log("Party Names:", allNames);
+          await saveLanguageNames(allNames);          
 
           allNames.forEach((name) => {
             console.log("Language Name:", name);
@@ -123,7 +122,18 @@ function XmlFileRead() {
       alert("Error processing file: " + error.message);
     }
   };
-
+  useEffect(() => {
+    const initializeDatabase = async () => {
+      try {
+        await initDB();
+        // alert("Database initialized successfully.");
+      } catch (error) {
+        alert("Error initializing the database:", error);
+      }
+    };
+  
+    initializeDatabase();
+  }, []);
   
   return (
     <div className="main">

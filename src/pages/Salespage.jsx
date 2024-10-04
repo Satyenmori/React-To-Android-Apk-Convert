@@ -6,7 +6,22 @@ import { create } from "xmlbuilder2";
 import { Storage } from "@capacitor/storage";
 import { useNavigate } from "react-router-dom";
 import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
-import { initDB, saveSalesData, fetchProductDetails } from "./databse";
+import {
+  initDB,
+  saveSalesData,
+  fetchProductDetails,
+  getAllLanguageNames,
+} from "./databse";
+
+const fetchPartyNames = async () => {
+  try {
+    const partyNames = await getAllLanguageNames();
+    return partyNames;
+  } catch (error) {
+    alert("Error fetching party names:" + error.message);
+    return [];
+  }
+};
 const CustomSelectBox = ({ options, onChange }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -18,6 +33,7 @@ const CustomSelectBox = ({ options, onChange }) => {
 
   const handleSelect = (option) => {
     setSelectedParty(option);
+    setSearchTerm(option);
     setShowDropdown(false);
     onChange(option);
   };
@@ -26,28 +42,26 @@ const CustomSelectBox = ({ options, onChange }) => {
     <div className="custom-select-container">
       <input
         type="text"
-        placeholder="Select Party"
-        value={selectedParty}
-        onClick={() => setShowDropdown(!showDropdown)}
-        onChange={(e) => {
-          setSelectedParty(e.target.value);
-          setSearchTerm(e.target.value);
-        }}
+        placeholder="Select Party..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        onFocus={() => setShowDropdown(true)}
         className="custom-select-input"
       />
 
       {showDropdown && (
         <ul className="custom-select-dropdown">
-          {filteredOptions.map((option, index) => (
-            <li
-              key={index}
-              onClick={() => handleSelect(option)}
-              className="custom-select-option"
-            >
-              {option}
-            </li>
-          ))}
-          {filteredOptions.length === 0 && (
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option, index) => (
+              <li
+                key={index}
+                onClick={() => handleSelect(option)}
+                className="custom-select-option"
+              >
+                {option}
+              </li>
+            ))
+          ) : (
             <li className="custom-select-no-option">No options found</li>
           )}
         </ul>
@@ -60,7 +74,8 @@ const Sales = () => {
     { product: "", price: "", quantity: "", subtotal: "" },
   ]);
   const [party, setParty] = useState("");
-  const parties = ["MAHAKALI", "Dhavalbhai", "Party A", "Party B"];
+  const [parties, setParties] = useState([]);
+  const [selectedParty, setSelectedParty] = useState("");
   const navigator = useNavigate();
 
   const createXML = async (sales) => {
@@ -425,11 +440,18 @@ const Sales = () => {
     }
   };
   useEffect(() => {
-    const FetchParties = async () => {
-      await initDB();
+    const initializeDatabaseAndLoadParties = async () => {
+      try {
+        await initDB();
+        // alert("Database initialized.");
+        const fetchedParties = await fetchPartyNames();
+        setParties(fetchedParties);
+      } catch (error) {
+        alert("Initialization or data fetching failed:", error);
+      }
     };
 
-    FetchParties();
+    initializeDatabaseAndLoadParties();
   }, []);
   return (
     <div className="container">
@@ -439,10 +461,22 @@ const Sales = () => {
         <input type="date" id="date" name="date" required />
 
         <label htmlFor="party">Party:</label>
-        <CustomSelectBox
-          options={parties}
-          onChange={(selectedParty) => setParty(selectedParty)}
-        />
+        {parties.length > 0 ? (
+          <CustomSelectBox
+            options={parties}
+            onChange={(selectedParty) => setParty(selectedParty)}
+          />
+        ) : (
+          <p
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              marginBottom: "20px",
+            }}
+          >
+            Loading parties...
+          </p>
+        )}
         {/* <p>Selected Party: {party}</p> */}
         {entries.map((entry, index) => (
           <div key={index} className="entry-group">

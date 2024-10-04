@@ -132,11 +132,7 @@ const Voucher = () => {
       alert("No sales data available to print.");
     }
   };
-  // const fetchLanguageNames = async () => {
-  //   const languageNames = await getAllLanguageNames();
-  //   alert("Partyname from DB:", languageNames);
-  // };
-  // fetchLanguageNames();
+
   return (
     <div className="container">
       <h2 style={{ color: "black", textAlign: "center" }}>VOUCHER DATA</h2>

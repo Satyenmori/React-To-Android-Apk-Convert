@@ -234,26 +234,41 @@ export const deleteVoucher = async (party) => {
 };
 
 // Party name store
-// Save extracted language names to the SQLite database
 export const saveLanguageNames = async (languageNames) => {
+  let db = null;
   try {
-    const db = await sqliteConnection.createConnection(
-      "mydb",
-      false,
-      "no-encryption",
-      1
-    );
+    const isConnectionExists = (await sqliteConnection.isConnection("mydb"))
+      .result;
+    if (isConnectionExists) {
+      db = await sqliteConnection.retrieveConnection("mydb");
+    } else {
+      // Create a new connection if one doesn't exist
+      db = await sqliteConnection.createConnection(
+        "mydb",
+        false,
+        "no-encryption",
+        1
+      );
+    }
+
     await db.open();
+    const createPartynameTableQuery = `
+      CREATE TABLE IF NOT EXISTS partyname (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL
+      );
+    `;
+    await db.execute(createPartynameTableQuery);
 
     // Insert each language name into the languages table
     for (const name of languageNames) {
       const insertLanguageQuery = `INSERT INTO partyname (name) VALUES (?);`;
       await db.run(insertLanguageQuery, [name]);
     }
-    
+    if (!isConnectionExists) {
+      await sqliteConnection.closeConnection("mydb");
+    }
     alert("Party names saved successfully to SQLite!");
-
-    await sqliteConnection.closeConnection("mydb");
   } catch (err) {
     console.error("Failed to save Partyname names:", err);
     alert("Failed to save Partyname names: " + err.message);
@@ -261,34 +276,48 @@ export const saveLanguageNames = async (languageNames) => {
 };
 
 // get all partynames
-// export const getAllLanguageNames = async () => {
-//   try {
-//     const db = await sqliteConnection.createConnection(
-//       "mydb",
-//       false,
-//       "no-encryption",
-//       1
-//     );
-//     await db.open();
+export const getAllLanguageNames = async () => {
+  let db = null;
+  try {
+    // Check if a connection to the database already exists
+    const isConnectionExists = (await sqliteConnection.isConnection("mydb"))
+      .result;
 
-//     // Query to select all language names
-//     const selectAllLanguagesQuery = `SELECT name FROM partyname;`;
-//     const result = await db.query(selectAllLanguagesQuery);
+    if (isConnectionExists) {
+      db = await sqliteConnection.retrieveConnection("mydb");
+    } else {
+      // Create a new connection if one doesn't exist
+      db = await sqliteConnection.createConnection(
+        "mydb",
+        false,
+        "no-encryption",
+        1
+      );
+    }
 
-//     if (result.values && result.values.length > 0) {
-//       const languageNames = result.values.map(row => row.name);
-//       alert("Retrieved partyname names:", languageNames);
-//       return languageNames;
-//     } else {
-//       console.log("No partyname names found.");
-//       alert("No partyname names found.");
-//       // return [];
-//     }
+    await db.open();
 
-//     await sqliteConnection.closeConnection("mydb");
-//   } catch (err) {
-//     console.error("Failed to retrieve language names:", err);
-//     alert("Failed to retrieve language names: " + err.message);
-//     return [];
-//   }
-// };
+    const selectAllLanguagesQuery = `SELECT name FROM partyname;`;
+    const result = await db.query(selectAllLanguagesQuery);
+
+    // Close the connection if it was newly created
+    if (!isConnectionExists) {
+      await sqliteConnection.closeConnection("mydb");
+    }
+
+    if (result.values && result.values.length > 0) {
+      const languageNames = result.values.map((row) => row.name);
+      console.log("Retrieved party names:", languageNames);
+      // alert("Retrieved party names:", languageNames);
+      return languageNames;
+    } else {
+      console.log("No party names found.");
+      alert("No party names found.");
+      return [];
+    }
+  } catch (err) {
+    console.error("Failed to retrieve language names:", err);
+    alert("Not Fetch Partyname: " + err.message);
+    return [];
+  }
+};
