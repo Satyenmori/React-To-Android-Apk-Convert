@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Storage } from "@capacitor/storage";
 import "../Style/Import.css";
 import importImage from "../images/import1.png";
-import { getAllLanguageNames, initDB, saveLanguageNames } from "./databse";
+import { initDB, saveLanguageNames, saveproductNames } from "./databse";
 
 function XmlFileRead() {
   const [fileInfos, setFileInfos] = useState([
@@ -33,7 +33,7 @@ function XmlFileRead() {
     loadFileInfos();
   }, []);
 
-  const openFilePicker = async (index) => {
+  const openFilePicker = async (index,type) => {
     try {
       const file = await pickFile();
       if (file) {
@@ -45,7 +45,13 @@ function XmlFileRead() {
           dateTime: currentDateTime,
         };
         setFileInfos(updatedInfos);
-        await saveFileToStorage(file, currentDateTime, updatedInfos[index].key);
+        if (index === 0) {
+          // File1: Party XML
+          await saveFileToStorage(file, currentDateTime, updatedInfos[index].key, "party");
+        } else if (index === 1) {
+          // File2: Product XML
+          await saveFileToStorage(file, currentDateTime, updatedInfos[index].key, "product");
+        }
       } else {
         alert("No file selected.");
       }
@@ -72,7 +78,7 @@ function XmlFileRead() {
     });
   };
 
-  const saveFileToStorage = async (file, dateTime, key) => {
+  const saveFileToStorage = async (file, dateTime, key, type) => {
     try {
       const reader = new FileReader();
       reader.onload = async () => {
@@ -99,18 +105,33 @@ function XmlFileRead() {
             allNames = allNames.concat(nameMatches);
           });
 
-          // Party Name Store database
-          await saveLanguageNames(allNames);          
-
-          allNames.forEach((name) => {
-            console.log("Language Name:", name);
-          });
+          // Party & Product Name Store database
+          if (type === "party") {
+            await saveLanguageNames(allNames);
+            allNames.forEach((name) => {
+              console.log("Party Name:", name);
+            });
+          } else if (type === "product") {
+            await saveproductNames(allNames);
+            allNames.forEach((name) => {
+              console.log("Product Name:", name);
+            });
+          }
 
           const value = JSON.stringify(allNames);
           console.log("File Read Json Value", value);
         } else {
           console.log("No <LANGUAGENAME.LIST> found.");
         }
+        // Locale storage Name & Date only store
+        const fileData = {
+          name: file.name,
+          dateTime: dateTime,
+        };
+        await Storage.set({
+          key: key,
+          value: JSON.stringify(fileData),
+        });
       };
       reader.onerror = (err) => {
         console.error("Error reading file:", err);
@@ -131,10 +152,10 @@ function XmlFileRead() {
         alert("Error initializing the database:", error);
       }
     };
-  
+
     initializeDatabase();
   }, []);
-  
+
   return (
     <div className="main">
       <img src={importImage} alt="Import img" className="import-image" />

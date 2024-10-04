@@ -44,6 +44,15 @@ export const initDB = async () => {
     `;
     await db.execute(createPartynameTableQuery);
 
+    // Create Product Table
+    const createProdcutQuery = `
+      CREATE TABLE IF NOT EXISTS product (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL
+      );
+    `;
+    await db.execute(createProdcutQuery);
+
     await sqliteConnection.closeConnection("mydb");
     // alert("Sales and Sales Items tables created successfully");
   } catch (err) {
@@ -318,6 +327,95 @@ export const getAllLanguageNames = async () => {
   } catch (err) {
     console.error("Failed to retrieve language names:", err);
     alert("Not Fetch Partyname: " + err.message);
+    return [];
+  }
+};
+
+// store Prodcut Name
+export const saveproductNames = async (productNames) => {
+  let db = null;
+  try {
+    const isConnectionExists = (await sqliteConnection.isConnection("mydb"))
+      .result;
+    if (isConnectionExists) {
+      db = await sqliteConnection.retrieveConnection("mydb");
+    } else {
+      // Create a new connection if one doesn't exist
+      db = await sqliteConnection.createConnection(
+        "mydb",
+        false,
+        "no-encryption",
+        1
+      );
+    }
+
+    await db.open();
+    const createProdcutQuery = `
+      CREATE TABLE IF NOT EXISTS product (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL
+      );
+    `;
+    await db.execute(createProdcutQuery);
+
+    // Insert each product name into the products table
+    for (const name of productNames) {
+      const insertProductQuery = `INSERT INTO product (name) VALUES (?);`;
+      await db.run(insertProductQuery, [name]);
+    }
+    if (!isConnectionExists) {
+      await sqliteConnection.closeConnection("mydb");
+    }
+    alert("Product names saved successfully to SQLite!");
+  } catch (err) {
+    console.error("Failed to save Productname names:", err);
+    alert("Failed to save Productname names: " + err.message);
+  }
+};
+
+// get All Product
+export const getAllProductNames = async () => {
+  let db = null;
+  try {
+    // Check if a connection to the database already exists
+    const isConnectionExists = (await sqliteConnection.isConnection("mydb"))
+      .result;
+
+    if (isConnectionExists) {
+      db = await sqliteConnection.retrieveConnection("mydb");
+    } else {
+      // Create a new connection if one doesn't exist
+      db = await sqliteConnection.createConnection(
+        "mydb",
+        false,
+        "no-encryption",
+        1
+      );
+    }
+
+    await db.open();
+
+    const selectAllLanguagesQuery = `SELECT name FROM product;`;
+    const result = await db.query(selectAllLanguagesQuery);
+
+    // Close the connection if it was newly created
+    if (!isConnectionExists) {
+      await sqliteConnection.closeConnection("mydb");
+    }
+
+    if (result.values && result.values.length > 0) {
+      const languageNames = result.values.map((row) => row.name);
+      // console.log("Retrieved product names:", languageNames);
+      alert("Retrieved product names:", languageNames);
+      return languageNames;
+    } else {
+      console.log("No product names found.");
+      alert("No product names found.");
+      return [];
+    }
+  } catch (err) {
+    console.error("Failed to retrieve product names:", err);
+    alert("Not Fetch product: " + err.message);
     return [];
   }
 };

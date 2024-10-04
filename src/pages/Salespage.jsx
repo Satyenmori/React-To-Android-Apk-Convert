@@ -11,6 +11,7 @@ import {
   saveSalesData,
   fetchProductDetails,
   getAllLanguageNames,
+  getAllProductNames,
 } from "./databse";
 
 const fetchPartyNames = async () => {
@@ -22,6 +23,16 @@ const fetchPartyNames = async () => {
     return [];
   }
 };
+const fetchProductNames = async () => {
+  try {
+    const partyNames = await getAllProductNames();
+    return partyNames;
+  } catch (error) {
+    alert("Error fetching party names:" + error.message);
+    return [];
+  }
+};
+
 const CustomSelectBox = ({ options, onChange }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -69,12 +80,61 @@ const CustomSelectBox = ({ options, onChange }) => {
     </div>
   );
 };
+
+const CustomProductBox = ({ options, onChange }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState("");
+
+  // Filter options based on the search term
+  const filteredOptions = options.filter((option) =>
+    option.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSelect = (option) => {
+    setSelectedProduct(option);
+    setSearchTerm(option); // Set the selected product as the search term
+    setShowDropdown(false); // Close dropdown after selection
+    onChange(option); // Pass the selected option back to the parent component
+  };
+
+  return (
+    <div className="custom-select-container">
+      <input
+        type="text"
+        placeholder="Select Product..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)} // Update search term on input change
+        onFocus={() => setShowDropdown(true)} // Show dropdown on input focus
+        className="custom-select-input"
+      />
+      {showDropdown && (
+        <ul className="custom-select-dropdown">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option, index) => (
+              <li
+                key={index}
+                onClick={() => handleSelect(option)}
+                className="custom-select-option"
+              >
+                {option}
+              </li>
+            ))
+          ) : (
+            <li className="custom-select-no-option">No options found</li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+};
 const Sales = () => {
   const [entries, setEntries] = useState([
     { product: "", price: "", quantity: "", subtotal: "" },
   ]);
   const [party, setParty] = useState("");
   const [parties, setParties] = useState([]);
+  const [products, setProducts] = useState([]);
   const [selectedParty, setSelectedParty] = useState("");
   const navigator = useNavigate();
 
@@ -445,7 +505,9 @@ const Sales = () => {
         await initDB();
         // alert("Database initialized.");
         const fetchedParties = await fetchPartyNames();
+        const fetchedProducts = await fetchProductNames(); 
         setParties(fetchedParties);
+        setProducts(fetchedProducts);
       } catch (error) {
         alert("Initialization or data fetching failed:", error);
       }
@@ -483,16 +545,11 @@ const Sales = () => {
             <div className="entry-fields">
               <div className="field-group">
                 <label htmlFor={`product-${index}`}>Product:</label>
-                <select
-                  id={`product-${index}`}
-                  name={`product-${index}`}
-                  value={entry.product}
-                  onChange={(e) => handleProductChange(index, e.target.value)}
-                >
-                  <option value="">Select Product</option>
-                  <option value="PUMP BNQS 150">PUMP BNQS 150</option>
-                  <option value="PUMP BNQS 300 GPD">PUMP BNQS 300 GPD</option>
-                </select>
+                {/* Use CustomProductBox with product data */}
+                <CustomProductBox
+                  options={products} // Pass the fetched product list
+                  onChange={(value) => handleProductChange(index, value)}
+                />
               </div>
 
               <div className="inline-group">
