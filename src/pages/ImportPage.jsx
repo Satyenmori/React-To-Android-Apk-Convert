@@ -2,7 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Storage } from "@capacitor/storage";
 import "../Style/Import.css";
 import importImage from "../images/import1.png";
-import { initDB, saveLanguageNames, saveproductNames } from "./databse";
+import {
+  initDB,
+  saveLanguageNames,
+  saveproductNames,
+  saveUnitNames,
+} from "./databse";
 
 function XmlFileRead() {
   const [fileInfos, setFileInfos] = useState([
@@ -33,7 +38,7 @@ function XmlFileRead() {
     loadFileInfos();
   }, []);
 
-  const openFilePicker = async (index,type) => {
+  const openFilePicker = async (index, type) => {
     try {
       const file = await pickFile();
       if (file) {
@@ -47,10 +52,20 @@ function XmlFileRead() {
         setFileInfos(updatedInfos);
         if (index === 0) {
           // File1: Party XML
-          await saveFileToStorage(file, currentDateTime, updatedInfos[index].key, "party");
+          await saveFileToStorage(
+            file,
+            currentDateTime,
+            updatedInfos[index].key,
+            "party"
+          );
         } else if (index === 1) {
           // File2: Product XML
-          await saveFileToStorage(file, currentDateTime, updatedInfos[index].key, "product");
+          await saveFileToStorage(
+            file,
+            currentDateTime,
+            updatedInfos[index].key,
+            "product"
+          );
         }
       } else {
         alert("No file selected.");
@@ -84,14 +99,42 @@ function XmlFileRead() {
       reader.onload = async () => {
         let content = reader.result;
 
+        // Clean content by removing new lines and multiple spaces
         content = content.replace(/\r\n/g, "").replace(/\s+/g, " ");
 
+        // Modify the regex to capture <UNIT ...> elements with attributes and their inner content
+        const unitMatches = [
+          ...content.matchAll(/<UNIT\b[^>]*>(.*?)<\/UNIT>/g),
+        ];
+        let allNamesFromUnits = [];
+
+        // Match <LANGUAGENAME.LIST> elements (unchanged)
         const languageListMatches = [
           ...content.matchAll(
             /<LANGUAGENAME\.LIST>(.*?)<\/LANGUAGENAME\.LIST>/g
           ),
         ];
 
+        // Extract <NAME> from inside each <UNIT>
+        unitMatches.forEach((unitMatch) => {
+          const unitContent = unitMatch[1];
+
+          // Extract <NAME> inside <UNIT>
+          const namesInUnit = [
+            ...unitContent.matchAll(/<NAME>(.*?)<\/NAME>/g),
+          ].map((nameMatch) => nameMatch[1]); // Extract the content inside <NAME>
+
+          allNamesFromUnits = allNamesFromUnits.concat(namesInUnit);
+        });
+
+        // Log the fetched <NAME> from <UNIT> independently
+        if (allNamesFromUnits.length > 0) {
+          console.log("Units:", allNamesFromUnits);
+        } else {
+          console.log("No <NAME> found inside <UNIT>");
+        }
+
+        // Process <LANGUAGENAME.LIST> as before
         if (languageListMatches.length > 0) {
           let allNames = [];
 
@@ -105,24 +148,26 @@ function XmlFileRead() {
             allNames = allNames.concat(nameMatches);
           });
 
-          // Party & Product Name Store database
+          // Party,Unit & Product Name Store database
           if (type === "party") {
             await saveLanguageNames(allNames);
-            allNames.forEach((name) => {
-              console.log("Party Name:", name);
-            });
+            await saveUnitNames(allNamesFromUnits);
+            // allNames.forEach((name) => {
+            //   console.log("Party Name:", name);
+            // });
+            // allNamesFromUnits.forEach((name) => {
+            //   console.log("Unit Names", name);
+            // });
           } else if (type === "product") {
             await saveproductNames(allNames);
             allNames.forEach((name) => {
               console.log("Product Name:", name);
             });
           }
-
-          const value = JSON.stringify(allNames);
-          console.log("File Read Json Value", value);
         } else {
           console.log("No <LANGUAGENAME.LIST> found.");
         }
+
         // Locale storage Name & Date only store
         const fileData = {
           name: file.name,
@@ -133,16 +178,19 @@ function XmlFileRead() {
           value: JSON.stringify(fileData),
         });
       };
+
       reader.onerror = (err) => {
         console.error("Error reading file:", err);
         alert("Error reading file: " + err.message);
       };
+
       reader.readAsText(file);
     } catch (error) {
       console.error("Error processing file:", error);
       alert("Error processing file: " + error.message);
     }
   };
+
   useEffect(() => {
     const initializeDatabase = async () => {
       try {

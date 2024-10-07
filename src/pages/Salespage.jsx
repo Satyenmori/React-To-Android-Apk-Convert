@@ -93,9 +93,9 @@ const CustomProductBox = ({ options, onChange }) => {
 
   const handleSelect = (option) => {
     setSelectedProduct(option);
-    setSearchTerm(option); // Set the selected product as the search term
-    setShowDropdown(false); // Close dropdown after selection
-    onChange(option); // Pass the selected option back to the parent component
+    setSearchTerm(option); 
+    setShowDropdown(false);
+    onChange(option); 
   };
 
   return (
@@ -104,8 +104,8 @@ const CustomProductBox = ({ options, onChange }) => {
         type="text"
         placeholder="Select Product..."
         value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)} // Update search term on input change
-        onFocus={() => setShowDropdown(true)} // Show dropdown on input focus
+        onChange={(e) => setSearchTerm(e.target.value)} 
+        onFocus={() => setShowDropdown(true)} 
         className="custom-select-input"
       />
       {showDropdown && (
@@ -547,7 +547,7 @@ const Sales = () => {
                 <label htmlFor={`product-${index}`}>Product:</label>
                 {/* Use CustomProductBox with product data */}
                 <CustomProductBox
-                  options={products} // Pass the fetched product list
+                  options={products} 
                   onChange={(value) => handleProductChange(index, value)}
                 />
               </div>

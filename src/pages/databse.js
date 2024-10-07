@@ -53,6 +53,15 @@ export const initDB = async () => {
     `;
     await db.execute(createProdcutQuery);
 
+    // Create Unit Table
+    const createUnitQuery = `
+      CREATE TABLE IF NOT EXISTS unit (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL
+      );
+    `;
+    await db.execute(createUnitQuery);
+
     await sqliteConnection.closeConnection("mydb");
     // alert("Sales and Sales Items tables created successfully");
   } catch (err) {
@@ -72,7 +81,7 @@ export const saveSalesData = async (party, products) => {
     );
     await db.open();
 
-    // Check if the sale already exists for the given party and date
+    // Check if the sale already exists for the given party
     const selectSalesQuery = `SELECT id FROM sales WHERE party = ?;`;
     const salesResult = await db.query(selectSalesQuery, [party]);
 
@@ -406,7 +415,7 @@ export const getAllProductNames = async () => {
     if (result.values && result.values.length > 0) {
       const languageNames = result.values.map((row) => row.name);
       // console.log("Retrieved product names:", languageNames);
-      alert("Retrieved product names:", languageNames);
+      // alert("Retrieved product names:", languageNames);
       return languageNames;
     } else {
       console.log("No product names found.");
@@ -417,5 +426,48 @@ export const getAllProductNames = async () => {
     console.error("Failed to retrieve product names:", err);
     alert("Not Fetch product: " + err.message);
     return [];
+  }
+};
+
+// Add units
+
+export const saveUnitNames = async (unitNames) => {
+  let db = null;
+  try {
+    const isConnectionExists = (await sqliteConnection.isConnection("mydb"))
+      .result;
+    if (isConnectionExists) {
+      db = await sqliteConnection.retrieveConnection("mydb");
+    } else {
+      // Create a new connection if one doesn't exist
+      db = await sqliteConnection.createConnection(
+        "mydb",
+        false,
+        "no-encryption",
+        1
+      );
+    }
+
+    await db.open();
+    const createUnitQuery = `
+      CREATE TABLE IF NOT EXISTS unit (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL
+      );
+    `;
+    await db.execute(createUnitQuery);
+
+    // Insert each Unit name into the units table
+    for (const name of unitNames) {
+      const insertUnitQuery = `INSERT INTO unit (name) VALUES (?);`;
+      await db.run(insertUnitQuery, [name]);
+    }
+    if (!isConnectionExists) {
+      await sqliteConnection.closeConnection("mydb");
+    }
+    alert("Unit names saved successfully to SQLite!");
+  } catch (err) {
+    console.error("Failed to save Unitname names:", err);
+    alert("Failed to save Unitname names: " + err.message);
   }
 };
