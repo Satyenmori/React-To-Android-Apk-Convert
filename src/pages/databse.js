@@ -471,3 +471,50 @@ export const saveUnitNames = async (unitNames) => {
     alert("Failed to save Unitname names: " + err.message);
   }
 };
+
+// get all unit
+export const getAllUnitNames = async () => {
+  let db = null;
+  try {
+    // Check if a connection to the database already exists
+    const isConnectionExists = (await sqliteConnection.isConnection("mydb"))
+      .result;
+
+    if (isConnectionExists) {
+      db = await sqliteConnection.retrieveConnection("mydb");
+    } else {
+      // Create a new connection if one doesn't exist
+      db = await sqliteConnection.createConnection(
+        "mydb",
+        false,
+        "no-encryption",
+        1
+      );
+    }
+
+    await db.open();
+
+    const selectAllunitQuery = `SELECT name FROM unit;`;
+    const result = await db.query(selectAllunitQuery);
+
+    // Close the connection if it was newly created
+    if (!isConnectionExists) {
+      await sqliteConnection.closeConnection("mydb");
+    }
+
+    if (result.values && result.values.length > 0) {
+      const unitNames = result.values.map((row) => row.name);
+      // console.log("Retrieved product names:", languageNames);
+      alert("Retrieved unit names:", unitNames);
+      return unitNames;
+    } else {
+      console.log("No Unit names found.");
+      alert("No Unit names found.");
+      return [];
+    }
+  } catch (err) {
+    console.error("Failed to retrieve Unit names:", err);
+    alert("Not Fetch Unit: " + err.message);
+    return [];
+  }
+};

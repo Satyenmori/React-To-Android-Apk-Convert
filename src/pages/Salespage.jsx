@@ -12,6 +12,7 @@ import {
   fetchProductDetails,
   getAllLanguageNames,
   getAllProductNames,
+  getAllUnitNames,
 } from "./databse";
 
 const fetchPartyNames = async () => {
@@ -27,6 +28,16 @@ const fetchProductNames = async () => {
   try {
     const partyNames = await getAllProductNames();
     return partyNames;
+  } catch (error) {
+    alert("Error fetching party names:" + error.message);
+    return [];
+  }
+};
+
+const fetchUnitNames = async () => {
+  try {
+    const unitNames = await getAllUnitNames();
+    return unitNames;
   } catch (error) {
     alert("Error fetching party names:" + error.message);
     return [];
@@ -93,9 +104,9 @@ const CustomProductBox = ({ options, onChange }) => {
 
   const handleSelect = (option) => {
     setSelectedProduct(option);
-    setSearchTerm(option); 
+    setSearchTerm(option);
     setShowDropdown(false);
-    onChange(option); 
+    onChange(option);
   };
 
   return (
@@ -104,8 +115,56 @@ const CustomProductBox = ({ options, onChange }) => {
         type="text"
         placeholder="Select Product..."
         value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)} 
-        onFocus={() => setShowDropdown(true)} 
+        onChange={(e) => setSearchTerm(e.target.value)}
+        onFocus={() => setShowDropdown(true)}
+        className="custom-select-input"
+      />
+      {showDropdown && (
+        <ul className="custom-select-dropdown">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option, index) => (
+              <li
+                key={index}
+                onClick={() => handleSelect(option)}
+                className="custom-select-option"
+              >
+                {option}
+              </li>
+            ))
+          ) : (
+            <li className="custom-select-no-option">No options found</li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+};
+
+const CustomUnitBox = ({ options, onChange }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedUnit, setSelectedUnit] = useState("");
+
+  // Filter options based on the search term
+  const filteredOptions = options.filter((option) =>
+    option.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSelect = (option) => {
+    setSelectedUnit(option);
+    setSearchTerm(option);
+    setShowDropdown(false);
+    onChange(option);
+  };
+
+  return (
+    <div className="custom-select-container">
+      <input
+        type="text"
+        placeholder="Select Unit..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        onFocus={() => setShowDropdown(true)}
         className="custom-select-input"
       />
       {showDropdown && (
@@ -130,11 +189,12 @@ const CustomProductBox = ({ options, onChange }) => {
 };
 const Sales = () => {
   const [entries, setEntries] = useState([
-    { product: "", price: "", quantity: "", subtotal: "" },
+    { product: "", unit: "", price: "", quantity: "", subtotal: "" },
   ]);
   const [party, setParty] = useState("");
   const [parties, setParties] = useState([]);
   const [products, setProducts] = useState([]);
+  const [unit, setUnit] = useState([]);
   const [selectedParty, setSelectedParty] = useState("");
   const navigator = useNavigate();
 
@@ -294,17 +354,17 @@ const Sales = () => {
                     <GSTRATEINFERAPPLICABILITY>As per Masters/Company</GSTRATEINFERAPPLICABILITY>
                     <GSTHSNINFERAPPLICABILITY>As per Masters/Company</GSTHSNINFERAPPLICABILITY>
                     <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
-                    <RATE>${product.price}/pcs</RATE>
+                    <RATE>${product.price}/${product.unit}</RATE>
                     <AMOUNT>${product.subtotal}</AMOUNT>
-                    <ACTUALQTY>${product.quantity} pcs</ACTUALQTY>
-                    <BILLEDQTY>${product.quantity} pcs</BILLEDQTY>
+                    <ACTUALQTY>${product.quantity} ${product.unit}</ACTUALQTY>
+                    <BILLEDQTY>${product.quantity} ${product.unit}</BILLEDQTY>
                     <BATCHALLOCATIONS.LIST>
                         <GODOWNNAME>Main Location</GODOWNNAME>
                         <BATCHNAME>Primary Batch</BATCHNAME>
                         <TRACKINGNUMBER>Not Applicable</TRACKINGNUMBER>
                         <AMOUNT>${product.subtotal}</AMOUNT>
-                        <ACTUALQTY>${product.quantity} pcs</ACTUALQTY>
-                        <BILLEDQTY>${product.quantity} pcs</BILLEDQTY>
+                        <ACTUALQTY>${product.quantity} ${product.unit}</ACTUALQTY>
+                        <BILLEDQTY>${product.quantity} ${product.unit}</BILLEDQTY>
                     </BATCHALLOCATIONS.LIST>
                     <ACCOUNTINGALLOCATIONS.LIST>
                         <LEDGERNAME>Salse A/c</LEDGERNAME>
@@ -395,22 +455,26 @@ const Sales = () => {
     }
   };
 
-  const handleProductChange = async (index, value) => {
+  const handleProductChange = async (index, value, type) => {
     if (!party) {
       alert("Please select a party first.");
       return;
     }
 
     const newEntries = [...entries];
-    newEntries[index].product = value;
 
-    if (value) {
-      const { price, quantity } = await fetchProductDetails(party, value);
-      newEntries[index].price = price || "";
-      newEntries[index].quantity = quantity || "";
-      newEntries[index].subtotal = (
-        parseFloat(price) * parseInt(quantity, 10) || 0
-      ).toFixed(2);
+    if (type === "product") {
+      newEntries[index].product = value;
+      if (value) {
+        const { price, quantity } = await fetchProductDetails(party, value);
+        newEntries[index].price = price || "";
+        newEntries[index].quantity = quantity || "";
+        newEntries[index].subtotal = (
+          parseFloat(price) * parseInt(quantity, 10) || 0
+        ).toFixed(2);
+      }
+    } else if (type === "unit") {
+      newEntries[index].unit = value;
     }
 
     setEntries(newEntries);
@@ -437,7 +501,7 @@ const Sales = () => {
   const addEntry = () => {
     setEntries([
       ...entries,
-      { product: "", price: "", quantity: "", subtotal: "" },
+      { product: "", unit: "", price: "", quantity: "", subtotal: "" },
     ]);
   };
 
@@ -459,6 +523,7 @@ const Sales = () => {
 
     const products = entries.map((entry) => ({
       product: entry.product,
+      unit: entry.unit,
       price: entry.price,
       quantity: entry.quantity,
       subtotal: entry.subtotal,
@@ -505,9 +570,11 @@ const Sales = () => {
         await initDB();
         // alert("Database initialized.");
         const fetchedParties = await fetchPartyNames();
-        const fetchedProducts = await fetchProductNames(); 
+        const fetchedProducts = await fetchProductNames();
+        const fetchedUnits = await fetchUnitNames();
         setParties(fetchedParties);
         setProducts(fetchedProducts);
+        setUnit(fetchedUnits);
       } catch (error) {
         alert("Initialization or data fetching failed:", error);
       }
@@ -545,13 +612,22 @@ const Sales = () => {
             <div className="entry-fields">
               <div className="field-group">
                 <label htmlFor={`product-${index}`}>Product:</label>
-                {/* Use CustomProductBox with product data */}
                 <CustomProductBox
-                  options={products} 
-                  onChange={(value) => handleProductChange(index, value)}
+                  options={products}
+                  onChange={(value) =>
+                    handleProductChange(index, value, "product")
+                  }
                 />
               </div>
-
+              <div className="field-group">
+                <label htmlFor={`unit-${index}`}>Unit:</label>
+                <CustomUnitBox
+                  options={unit}
+                  onChange={(value) =>
+                    handleProductChange(index, value, "unit")
+                  }
+                />
+              </div>
               <div className="inline-group">
                 <div className="field-group">
                   <label htmlFor={`price-${index}`}>Price:</label>
