@@ -354,6 +354,16 @@ const Sales = () => {
                     <GSTRATEINFERAPPLICABILITY>As per Masters/Company</GSTRATEINFERAPPLICABILITY>
                     <GSTHSNINFERAPPLICABILITY>As per Masters/Company</GSTHSNINFERAPPLICABILITY>
                     <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+                    <ISGSTASSESSABLEVALUEOVERRIDDEN>No</ISGSTASSESSABLEVALUEOVERRIDDEN>
+                    <STRDISGSTAPPLICABLE>No</STRDISGSTAPPLICABLE>
+                    <CONTENTNEGISPOS>No</CONTENTNEGISPOS>
+                    <ISLASTDEEMEDPOSITIVE>No</ISLASTDEEMEDPOSITIVE>
+                    <ISAUTONEGATE>No</ISAUTONEGATE>
+                    <ISCUSTOMSCLEARANCE>No</ISCUSTOMSCLEARANCE>
+                    <ISTRACKCOMPONENT>No</ISTRACKCOMPONENT>
+                    <ISTRACKPRODUCTION>No</ISTRACKPRODUCTION>
+                    <ISPRIMARYITEM>No</ISPRIMARYITEM>
+                    <ISSCRAP>No</ISSCRAP>
                     <RATE>${product.price}/${product.unit}</RATE>
                     <AMOUNT>${product.subtotal}</AMOUNT>
                     <ACTUALQTY>${product.quantity} ${product.unit}</ACTUALQTY>
@@ -361,16 +371,83 @@ const Sales = () => {
                     <BATCHALLOCATIONS.LIST>
                         <GODOWNNAME>Main Location</GODOWNNAME>
                         <BATCHNAME>Primary Batch</BATCHNAME>
-                        <TRACKINGNUMBER>Not Applicable</TRACKINGNUMBER>
+                        <INDENTNO>Not Applicable</INDENTNO>
+                        <ORDERNO>Not Applicable</ORDERNO>
+                        <TRACKINGNUMBER><![CDATA[&#4; Not Applicable]]></TRACKINGNUMBER>
+                        <DYNAMICCSTISCLEARED>No</DYNAMICCSTISCLEARED>
                         <AMOUNT>${product.subtotal}</AMOUNT>
                         <ACTUALQTY>${product.quantity} ${product.unit}</ACTUALQTY>
                         <BILLEDQTY>${product.quantity} ${product.unit}</BILLEDQTY>
+                        <ADDITIONALDETAILS.LIST>        </ADDITIONALDETAILS.LIST>
+                        <VOUCHERCOMPONENTLIST.LIST>        </VOUCHERCOMPONENTLIST.LIST>
                     </BATCHALLOCATIONS.LIST>
                     <ACCOUNTINGALLOCATIONS.LIST>
-                        <LEDGERNAME>Salse A/c</LEDGERNAME>
+                        <OLDAUDITENTRYIDS.LIST TYPE="Number">
+                          <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
+                        </OLDAUDITENTRYIDS.LIST>
+                        <LEDGERNAME>Sales Ledger</LEDGERNAME>
                         <GSTCLASS>Not Applicable</GSTCLASS>
+                        <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+                        <LEDGERFROMITEM>No</LEDGERFROMITEM>
+                        <REMOVEZEROENTRIES>No</REMOVEZEROENTRIES>
+                        <ISPARTYLEDGER>No</ISPARTYLEDGER>
+                        <GSTOVERRIDDEN>No</GSTOVERRIDDEN>
+                        <ISGSTASSESSABLEVALUEOVERRIDDEN>No</ISGSTASSESSABLEVALUEOVERRIDDEN>
+                        <STRDISGSTAPPLICABLE>No</STRDISGSTAPPLICABLE>
+                        <STRDGSTISPARTYLEDGER>No</STRDGSTISPARTYLEDGER>
+                        <STRDGSTISDUTYLEDGER>No</STRDGSTISDUTYLEDGER>
+                        <CONTENTNEGISPOS>No</CONTENTNEGISPOS>
+                        <ISLASTDEEMEDPOSITIVE>No</ISLASTDEEMEDPOSITIVE>
+                        <ISCAPVATTAXALTERED>No</ISCAPVATTAXALTERED>
+                        <ISCAPVATNOTCLAIMED>No</ISCAPVATNOTCLAIMED>
                         <AMOUNT>${product.subtotal}</AMOUNT>
+                        <SERVICETAXDETAILS.LIST>        </SERVICETAXDETAILS.LIST>
+                        <BANKALLOCATIONS.LIST>        </BANKALLOCATIONS.LIST>
+                        <BILLALLOCATIONS.LIST>        </BILLALLOCATIONS.LIST>
+                        <INTERESTCOLLECTION.LIST>        </INTERESTCOLLECTION.LIST>
+                        <OLDAUDITENTRIES.LIST>        </OLDAUDITENTRIES.LIST>
+                        <ACCOUNTAUDITENTRIES.LIST>        </ACCOUNTAUDITENTRIES.LIST>
+                        <AUDITENTRIES.LIST>        </AUDITENTRIES.LIST>
+                        <INPUTCRALLOCS.LIST>        </INPUTCRALLOCS.LIST>
+                        <DUTYHEADDETAILS.LIST>        </DUTYHEADDETAILS.LIST>
+                        <EXCISEDUTYHEADDETAILS.LIST>        </EXCISEDUTYHEADDETAILS.LIST>
+                        <RATEDETAILS.LIST>        </RATEDETAILS.LIST>
+                        <SUMMARYALLOCS.LIST>        </SUMMARYALLOCS.LIST>
+                        <CENVATDUTYALLOCATIONS.LIST>        </CENVATDUTYALLOCATIONS.LIST>
+                        <STPYMTDETAILS.LIST>        </STPYMTDETAILS.LIST>
+                        <EXCISEPAYMENTALLOCATIONS.LIST>        </EXCISEPAYMENTALLOCATIONS.LIST>
+                        <TAXBILLALLOCATIONS.LIST>        </TAXBILLALLOCATIONS.LIST>
+                        <TAXOBJECTALLOCATIONS.LIST>        </TAXOBJECTALLOCATIONS.LIST>
+                        <TDSEXPENSEALLOCATIONS.LIST>        </TDSEXPENSEALLOCATIONS.LIST>
+                        <VATSTATUTORYDETAILS.LIST>        </VATSTATUTORYDETAILS.LIST>
+                        <COSTTRACKALLOCATIONS.LIST>        </COSTTRACKALLOCATIONS.LIST>
+                        <REFVOUCHERDETAILS.LIST>        </REFVOUCHERDETAILS.LIST>
+                        <INVOICEWISEDETAILS.LIST>        </INVOICEWISEDETAILS.LIST>
+                        <VATITCDETAILS.LIST>        </VATITCDETAILS.LIST>
+                        <ADVANCETAXDETAILS.LIST>        </ADVANCETAXDETAILS.LIST>
+                        <TAXTYPEALLOCATIONS.LIST>        </TAXTYPEALLOCATIONS.LIST>
                     </ACCOUNTINGALLOCATIONS.LIST>
+                    <DUTYHEADDETAILS.LIST>       </DUTYHEADDETAILS.LIST>
+                    <RATEDETAILS.LIST>
+                      <GSTRATEDUTYHEAD>CGST</GSTRATEDUTYHEAD>
+                    </RATEDETAILS.LIST>
+                    <RATEDETAILS.LIST>
+                      <GSTRATEDUTYHEAD>SGST/UTGST</GSTRATEDUTYHEAD>
+                    </RATEDETAILS.LIST>
+                    <RATEDETAILS.LIST>
+                      <GSTRATEDUTYHEAD>IGST</GSTRATEDUTYHEAD>
+                    </RATEDETAILS.LIST>
+                    <RATEDETAILS.LIST>
+                      <GSTRATEDUTYHEAD>Cess</GSTRATEDUTYHEAD>
+                    </RATEDETAILS.LIST>
+                    <RATEDETAILS.LIST>
+                      <GSTRATEDUTYHEAD>State Cess</GSTRATEDUTYHEAD>
+                    </RATEDETAILS.LIST>
+                    <SUPPLEMENTARYDUTYHEADDETAILS.LIST>       </SUPPLEMENTARYDUTYHEADDETAILS.LIST>
+                    <TAXOBJECTALLOCATIONS.LIST>       </TAXOBJECTALLOCATIONS.LIST>
+                    <REFVOUCHERDETAILS.LIST>       </REFVOUCHERDETAILS.LIST>
+                    <EXCISEALLOCATIONS.LIST>       </EXCISEALLOCATIONS.LIST>
+                    <EXPENSEALLOCATIONS.LIST>       </EXPENSEALLOCATIONS.LIST>
                 `;
           voucher.appendChild(inventoryEntry);
 
@@ -450,7 +527,7 @@ const Sales = () => {
       return xmlString;
     } catch (error) {
       console.error("Error saving sales data:", error);
-      alert("Error Saving Sales Data", error);
+      alert("Error Saving Sales Data" + error.message);
       return null;
     }
   };
