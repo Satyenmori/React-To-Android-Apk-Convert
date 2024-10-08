@@ -194,7 +194,7 @@ export const updateVoucherInDB = async (party, products) => {
     );
     await db.open();
 
-    // First, delete existing sales and products for this party and date
+    // First, delete existing sales and products for this party
     const deleteSalesQuery = `
       DELETE FROM sales 
       WHERE party = ?;

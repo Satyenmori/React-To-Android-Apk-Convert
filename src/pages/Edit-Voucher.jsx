@@ -102,30 +102,36 @@ const EditSales = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
+      // Read the existing XML file
       const file = await Filesystem.readFile({
         path: "Transaction.xml",
         directory: Directory.External,
         encoding: Encoding.UTF8,
       });
+
       if (file.data) {
         const parser = new XMLParser({
           ignoreAttributes: false,
           ignoreTextNodeAttr: true,
         });
+
+        // Parse XML to JSON
         const json = parser.parse(file.data);
         const voucherIndex = json?.TALLYMESSAGE?.VOUCHER?.findIndex(
           (entry) => entry.GUID === guid
         );
+
         if (voucherIndex !== -1) {
           const updatedVoucher = json.TALLYMESSAGE.VOUCHER[voucherIndex];
+
+          // Format the date
           const rawDate = document.getElementById("date").value;
           const formattedDate = rawDate.replace(/-/g, "");
           updatedVoucher.DATE = formattedDate;
           updatedVoucher.VCHSTATUSDATE = formattedDate;
-          const partyName = document.getElementById("party").value;
-          updatedVoucher.PARTYLEDGERNAME = partyName;
 
-          // Update all related party fields
+          // Update the party name in relevant fields
+          const partyName = document.getElementById("party").value;
           const partyFields = [
             "PARTYLEDGERNAME",
             "BASICBUYERNAME",
@@ -134,56 +140,87 @@ const EditSales = () => {
             "BASICBASEPARTYNAME",
           ];
 
+          // Update all related party fields if they exist
           partyFields.forEach((field) => {
             if (updatedVoucher[field] !== undefined) {
               updatedVoucher[field] = partyName;
             }
           });
 
-          updatedVoucher["ALLINVENTORYENTRIES.LIST"] = entries.map(
-            (entry, index) => {
-              const existingInventoryEntry =
-                updatedVoucher["ALLINVENTORYENTRIES.LIST"][index] || {};
+          // Ensure ALLINVENTORYENTRIES.LIST is an array
+          let allInventoryEntries = updatedVoucher["ALLINVENTORYENTRIES.LIST"];
 
-              const updatedInventoryEntry = {
+          if (!Array.isArray(allInventoryEntries)) {
+            allInventoryEntries = [allInventoryEntries];
+          }
+
+          // Update inventory entries
+          updatedVoucher["ALLINVENTORYENTRIES.LIST"] = allInventoryEntries.map(
+            (existingInventoryEntry, index) => {
+              const updatedEntry = entries[index] || existingInventoryEntry;
+              return {
                 ...existingInventoryEntry,
-                STOCKITEMNAME: entry.product,
-                RATE: `${entry.price}/pcs`,
-                ACTUALQTY: `${entry.quantity} pcs`,
-                BILLEDQTY: `${entry.quantity} pcs`,
-                AMOUNT: entry.subtotal,
-
+                STOCKITEMNAME:
+                  updatedEntry.product || existingInventoryEntry.STOCKITEMNAME,
+                RATE:
+                  `${updatedEntry.price}/pcs` || existingInventoryEntry.RATE,
+                ACTUALQTY:
+                  `${updatedEntry.quantity} pcs` ||
+                  existingInventoryEntry.ACTUALQTY,
+                BILLEDQTY:
+                  `${updatedEntry.quantity} pcs` ||
+                  existingInventoryEntry.BILLEDQTY,
+                AMOUNT: updatedEntry.subtotal || existingInventoryEntry.AMOUNT,
                 "BATCHALLOCATIONS.LIST": {
                   ...existingInventoryEntry["BATCHALLOCATIONS.LIST"],
-                  ACTUALQTY: `${entry.quantity} pcs`,
-                  BILLEDQTY: `${entry.quantity} pcs`, 
-                  AMOUNT: entry.subtotal,
+                  ACTUALQTY:
+                    `${updatedEntry.quantity} pcs` ||
+                    existingInventoryEntry["BATCHALLOCATIONS.LIST"].ACTUALQTY,
+                  BILLEDQTY:
+                    `${updatedEntry.quantity} pcs` ||
+                    existingInventoryEntry["BATCHALLOCATIONS.LIST"].BILLEDQTY,
+                  AMOUNT:
+                    updatedEntry.subtotal ||
+                    existingInventoryEntry["BATCHALLOCATIONS.LIST"].AMOUNT,
                 },
-
                 "ACCOUNTINGALLOCATIONS.LIST": {
                   ...existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"],
-                  AMOUNT: entry.subtotal,
+                  AMOUNT:
+                    updatedEntry.subtotal ||
+                    existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"].AMOUNT,
                 },
               };
-
-              return updatedInventoryEntry;
             }
           );
 
-          const grandTotal = getGrandTotal();
-          if (updatedVoucher["LEDGERENTRIES.LIST"]) {
-            const ledgerEntries = updatedVoucher["LEDGERENTRIES.LIST"];
-            if (ledgerEntries.LEDGERNAME !== undefined) {
-              ledgerEntries.LEDGERNAME = partyName;
-            }
-            ledgerEntries.AMOUNT = `-${grandTotal}`;
-            if (ledgerEntries["BILLALLOCATIONS.LIST"]) {
-              ledgerEntries["BILLALLOCATIONS.LIST"].AMOUNT = `-${grandTotal}`;
-            }
+          // Ensure LEDGERENTRIES.LIST is an array
+          let ledgerEntries = updatedVoucher["LEDGERENTRIES.LIST"];
+
+          if (!Array.isArray(ledgerEntries)) {
+            ledgerEntries = [ledgerEntries];
           }
 
+          // Update the ledger entries while keeping other fields intact
+          const grandTotal = getGrandTotal();
+          updatedVoucher["LEDGERENTRIES.LIST"] = ledgerEntries.map(
+            (ledgerEntry) => ({
+              ...ledgerEntry,
+              LEDGERNAME: partyName || ledgerEntry.LEDGERNAME,
+              AMOUNT: `-${grandTotal}` || ledgerEntry.AMOUNT,
+              "BILLALLOCATIONS.LIST": {
+                ...ledgerEntry["BILLALLOCATIONS.LIST"],
+                AMOUNT:
+                  `-${grandTotal}` ||
+                  ledgerEntry["BILLALLOCATIONS.LIST"].AMOUNT,
+              },
+            })
+          );
+
+          // Convert JSON back to XML
           const builder = new XMLBuilder({ ignoreAttributes: false });
           const updatedXML = builder.build(json);
+
+          // Write the updated XML back to the file
           await Filesystem.writeFile({
             path: "Transaction.xml",
             directory: Directory.External,
@@ -191,15 +228,15 @@ const EditSales = () => {
             encoding: "utf8",
           });
 
-          //call the DB update function
-          const party = updatedVoucher.PARTYLEDGERNAME;
-          const date = updatedVoucher.DATE;
+          // Prepare data for database update
           const products = entries.map((entry) => ({
             product: entry.product,
             price: entry.price,
             quantity: entry.quantity,
           }));
-          await updateVoucherInDB(party, products);
+
+          // Update the voucher in the database
+          await updateVoucherInDB(partyName, products);
 
           alert("Voucher updated successfully!");
           navigator("/voucher");
@@ -211,7 +248,7 @@ const EditSales = () => {
       }
     } catch (error) {
       console.error("Error updating voucher data", error);
-      alert("Error updating voucher data", error);
+      alert("Error updating voucher data: " + error.message);
     }
   };
 
