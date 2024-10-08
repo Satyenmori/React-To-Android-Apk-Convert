@@ -4,20 +4,129 @@ import { FaPlus, FaTrashAlt } from "react-icons/fa";
 import { Storage } from "@capacitor/storage";
 import { useNavigate, useParams } from "react-router-dom";
 import { XMLBuilder, XMLParser } from "fast-xml-parser";
-import { updateVoucherInDB } from "./databse";
+import {
+  getAllLanguageNames,
+  getAllProductNames,
+  initDB,
+  updateVoucherInDB,
+} from "./databse";
 import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
+
+const CustomSelectBox = ({ options, onChange }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedParty, setSelectedParty] = useState("");
+
+  const filteredOptions = options.filter((option) =>
+    option.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSelect = (option) => {
+    setSelectedParty(option);
+    setSearchTerm(option);
+    setShowDropdown(false);
+    onChange(option);
+  };
+
+  return (
+    <div className="custom-select-container">
+      <input
+        type="text"
+        placeholder="Select Party..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        onFocus={() => setShowDropdown(true)}
+        className="custom-select-input"
+      />
+
+      {showDropdown && (
+        <ul className="custom-select-dropdown">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option, index) => (
+              <li
+                key={index}
+                onClick={() => handleSelect(option)}
+                className="custom-select-option"
+              >
+                {option}
+              </li>
+            ))
+          ) : (
+            <li className="custom-select-no-option">No options found</li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+};
+const CustomProductSelectBox = ({ options, onChange, defaultSelected }) => {
+  const [searchTerm, setSearchTerm] = useState(defaultSelected || "");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(defaultSelected || "");
+
+  const filteredOptions = options.filter((option) =>
+    option.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSelect = (option) => {
+    setSelectedProduct(option);
+    setSearchTerm(option);
+    setShowDropdown(false);
+    onChange(option);
+  };
+
+  return (
+    <div className="custom-select-container">
+      <input
+        type="text"
+        // placeholder="Select Product..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        onFocus={() => setShowDropdown(true)}
+        className="custom-select-input"
+      />
+
+      {showDropdown && (
+        <ul className="custom-select-dropdown">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option, index) => (
+              <li
+                key={index}
+                onClick={() => handleSelect(option)}
+                className="custom-select-option"
+              >
+                {option}
+              </li>
+            ))
+          ) : (
+            <li className="custom-select-no-option">No options found</li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+};
 
 const EditSales = () => {
   const [entries, setEntries] = useState([
     { product: "", price: "", quantity: "", subtotal: "" },
   ]);
   const [initialData, setInitialData] = useState(null);
+  const [partyNames, setPartyNames] = useState([]);
+  const [productNames, setProductNames] = useState([]);
+  const [selectedPartyName, setSelectedPartyName] = useState(
+    initialData?.PARTYLEDGERNAME || ""
+  );
+  const [selectedProducts, setSelectedProducts] = useState(
+    entries.map((entry) => entry.product || "")
+  );
   const { guid } = useParams();
   const navigator = useNavigate();
 
   useEffect(() => {
     const fetchVoucherData = async () => {
       try {
+        await initDB();
         const file = await Filesystem.readFile({
           path: "Transaction.xml",
           directory: Directory.External,
@@ -52,8 +161,27 @@ const EditSales = () => {
         console.error("Error fetching voucher data", error);
       }
     };
-
+    const fetchPartyNames = async () => {
+      try {
+        await initDB();
+        const partyNames = await getAllLanguageNames();
+        setPartyNames(partyNames);
+      } catch (error) {
+        alert("Error fetching party names:" + error.message);
+      }
+    };
+    const fetchProductNames = async () => {
+      try {
+        await initDB();
+        const productNames = await getAllProductNames();
+        setProductNames(productNames);
+      } catch (error) {
+        alert("Error fetching product names: " + error.message);
+      }
+    };
     fetchVoucherData();
+    fetchPartyNames();
+    fetchProductNames();
   }, [guid]);
 
   const handleProductChange = (index, value) => {
@@ -131,7 +259,7 @@ const EditSales = () => {
           updatedVoucher.VCHSTATUSDATE = formattedDate;
 
           // Update the party name in relevant fields
-          const partyName = document.getElementById("party").value;
+          const partyName = selectedPartyName;
           const partyFields = [
             "PARTYLEDGERNAME",
             "BASICBUYERNAME",
@@ -266,37 +394,26 @@ const EditSales = () => {
         />
 
         <label htmlFor="party">Party:</label>
-        <select
-          id="party"
-          name="party"
-          required
-          defaultValue={initialData?.PARTYLEDGERNAME || "NA"}
-        >
-          <option value={initialData?.PARTYLEDGERNAME || "NA"}>
-            {initialData?.PARTYLEDGERNAME || "NA"}
-          </option>
-          <option value="MAHAKALI">MAHAKALI</option>
-          <option value="Dhavalbhai">Dhavalbhai</option>
-        </select>
+        <CustomSelectBox
+          options={partyNames}
+          onChange={(selectedParty) => {
+            setSelectedPartyName(selectedParty);
+          }}
+          defaultSelected={initialData?.PARTYLEDGERNAME || ""}
+        />
 
         {entries.map((entry, index) => (
           <div key={index} className="entry-group">
             <div className="entry-fields">
               <div className="field-group">
                 <label htmlFor={`product-${index}`}>Product:</label>
-                <select
-                  id={`product-${index}`}
-                  name={`product-${index}`}
-                  value={entry.product || ""}
-                  onChange={(e) => handleProductChange(index, e.target.value)}
-                  required
-                >
-                  <option value={entry.product || ""}>
-                    {entry.product || ""}
-                  </option>
-                  <option value="PUMP BNQS 150">PUMP BNQS 150</option>
-                  <option value="PUMP BNQS 300 GPD">PUMP BNQS 300 GPD</option>
-                </select>
+                <CustomProductSelectBox
+                  options={productNames}
+                  defaultSelected={entry.product || ""}
+                  onChange={(selectedProduct) =>
+                    handleProductChange(index, selectedProduct)
+                  }
+                />
               </div>
 
               <div className="inline-group">
