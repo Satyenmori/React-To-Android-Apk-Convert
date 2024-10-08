@@ -7,6 +7,7 @@ import { XMLBuilder, XMLParser } from "fast-xml-parser";
 import {
   getAllLanguageNames,
   getAllProductNames,
+  getAllUnitNames,
   initDB,
   updateVoucherInDB,
 } from "./databse";
@@ -79,7 +80,53 @@ const CustomProductSelectBox = ({ options, onChange, defaultSelected }) => {
     <div className="custom-select-container">
       <input
         type="text"
-        // placeholder="Select Product..."
+        placeholder="Select Product..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        onFocus={() => setShowDropdown(true)}
+        className="custom-select-input"
+      />
+
+      {showDropdown && (
+        <ul className="custom-select-dropdown">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option, index) => (
+              <li
+                key={index}
+                onClick={() => handleSelect(option)}
+                className="custom-select-option"
+              >
+                {option}
+              </li>
+            ))
+          ) : (
+            <li className="custom-select-no-option">No options found</li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+};
+
+const CustomUnitSelectBox = ({ options, defaultSelected, onChange }) => {
+  const [searchTerm, setSearchTerm] = useState(defaultSelected || "");
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const filteredOptions = options.filter((option) =>
+    option.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSelect = (option) => {
+    setSearchTerm(option);
+    setShowDropdown(false);
+    onChange(option);
+  };
+
+  return (
+    <div className="custom-select-container">
+      <input
+        type="text"
+        placeholder="Select Unit..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         onFocus={() => setShowDropdown(true)}
@@ -109,11 +156,12 @@ const CustomProductSelectBox = ({ options, onChange, defaultSelected }) => {
 
 const EditSales = () => {
   const [entries, setEntries] = useState([
-    { product: "", price: "", quantity: "", subtotal: "" },
+    { product: "", unit: "", price: "", quantity: "", subtotal: "" },
   ]);
   const [initialData, setInitialData] = useState(null);
   const [partyNames, setPartyNames] = useState([]);
   const [productNames, setProductNames] = useState([]);
+  const [unitNames, setUnitNames] = useState([]);
   const [selectedPartyName, setSelectedPartyName] = useState(
     initialData?.PARTYLEDGERNAME || ""
   );
@@ -126,7 +174,6 @@ const EditSales = () => {
   useEffect(() => {
     const fetchVoucherData = async () => {
       try {
-        await initDB();
         const file = await Filesystem.readFile({
           path: "Transaction.xml",
           directory: Directory.External,
@@ -179,9 +226,19 @@ const EditSales = () => {
         alert("Error fetching product names: " + error.message);
       }
     };
+    const fetchUnitNames = async () => {
+      try {
+        await initDB();
+        const unitNames = await getAllUnitNames();
+        setUnitNames(unitNames);
+      } catch (error) {
+        alert("Error fetching unit names:" + error.message);
+      }
+    };
     fetchVoucherData();
     fetchPartyNames();
     fetchProductNames();
+    fetchUnitNames();
   }, [guid]);
 
   const handleProductChange = (index, value) => {
@@ -189,7 +246,11 @@ const EditSales = () => {
     newEntries[index].product = value;
     setEntries(newEntries);
   };
-
+  const handleUnitChange = (index, value) => {
+    const newEntries = [...entries];
+    newEntries[index].unit = value;
+    setEntries(newEntries);
+  };
   const handlePriceChange = (index, value) => {
     const newEntries = [...entries];
     newEntries[index].price = value;
@@ -211,7 +272,7 @@ const EditSales = () => {
   const addEntry = () => {
     setEntries([
       ...entries,
-      { product: "", price: "", quantity: "", subtotal: "" },
+      { product: "", unit: "", price: "", quantity: "", subtotal: "" },
     ]);
   };
 
@@ -286,26 +347,28 @@ const EditSales = () => {
           updatedVoucher["ALLINVENTORYENTRIES.LIST"] = allInventoryEntries.map(
             (existingInventoryEntry, index) => {
               const updatedEntry = entries[index] || existingInventoryEntry;
+              const unit = updatedEntry.unit || "pcs";
               return {
                 ...existingInventoryEntry,
                 STOCKITEMNAME:
                   updatedEntry.product || existingInventoryEntry.STOCKITEMNAME,
                 RATE:
-                  `${updatedEntry.price}/pcs` || existingInventoryEntry.RATE,
+                  `${updatedEntry.price}/${unit}` ||
+                  existingInventoryEntry.RATE,
                 ACTUALQTY:
-                  `${updatedEntry.quantity} pcs` ||
+                  `${updatedEntry.quantity} ${unit}` ||
                   existingInventoryEntry.ACTUALQTY,
                 BILLEDQTY:
-                  `${updatedEntry.quantity} pcs` ||
+                  `${updatedEntry.quantity} ${unit}` ||
                   existingInventoryEntry.BILLEDQTY,
                 AMOUNT: updatedEntry.subtotal || existingInventoryEntry.AMOUNT,
                 "BATCHALLOCATIONS.LIST": {
                   ...existingInventoryEntry["BATCHALLOCATIONS.LIST"],
                   ACTUALQTY:
-                    `${updatedEntry.quantity} pcs` ||
+                    `${updatedEntry.quantity} ${unit}` ||
                     existingInventoryEntry["BATCHALLOCATIONS.LIST"].ACTUALQTY,
                   BILLEDQTY:
-                    `${updatedEntry.quantity} pcs` ||
+                    `${updatedEntry.quantity} ${unit}` ||
                     existingInventoryEntry["BATCHALLOCATIONS.LIST"].BILLEDQTY,
                   AMOUNT:
                     updatedEntry.subtotal ||
@@ -415,7 +478,16 @@ const EditSales = () => {
                   }
                 />
               </div>
-
+              <div className="field-group">
+                <label htmlFor={`unit-${index}`}>Unit:</label>
+                <CustomUnitSelectBox
+                  options={unitNames}
+                  defaultSelected={entry.unit || ""}
+                  onChange={(selectedUnit) =>
+                    handleUnitChange(index, selectedUnit)
+                  }
+                />
+              </div>
               <div className="inline-group">
                 <div className="field-group">
                   <label htmlFor={`price-${index}`}>Price:</label>
