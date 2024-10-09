@@ -13,21 +13,22 @@ import {
 } from "./databse";
 import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 
-const CustomSelectBox = ({ options, onChange }) => {
-  const [searchTerm, setSearchTerm] = useState("");
+const CustomSelectBox = ({ options, onChange, defaultSelected }) => {
+  const [searchTerm, setSearchTerm] = useState(defaultSelected || "");
   const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedParty, setSelectedParty] = useState("");
 
   const filteredOptions = options.filter((option) =>
     option.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSelect = (option) => {
-    setSelectedParty(option);
     setSearchTerm(option);
     setShowDropdown(false);
     onChange(option);
   };
+  useEffect(() => {
+    setSearchTerm(defaultSelected || "");
+  }, [defaultSelected]);
 
   return (
     <div className="custom-select-container">
@@ -64,6 +65,12 @@ const CustomProductSelectBox = ({ options, onChange, defaultSelected }) => {
   const [searchTerm, setSearchTerm] = useState(defaultSelected || "");
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(defaultSelected || "");
+
+  // Update state when defaultSelected changes (e.g., on edit)
+  useEffect(() => {
+    setSearchTerm(defaultSelected || "");
+    setSelectedProduct(defaultSelected || "");
+  }, [defaultSelected]);
 
   const filteredOptions = options.filter((option) =>
     option.toLowerCase().includes(searchTerm.toLowerCase())
@@ -111,6 +118,11 @@ const CustomProductSelectBox = ({ options, onChange, defaultSelected }) => {
 const CustomUnitSelectBox = ({ options, defaultSelected, onChange }) => {
   const [searchTerm, setSearchTerm] = useState(defaultSelected || "");
   const [showDropdown, setShowDropdown] = useState(false);
+
+  // Update searchTerm when defaultSelected changes (e.g., on edit)
+  useEffect(() => {
+    setSearchTerm(defaultSelected || "");
+  }, [defaultSelected]);
 
   const filteredOptions = options.filter((option) =>
     option.toLowerCase().includes(searchTerm.toLowerCase())
@@ -244,6 +256,9 @@ const EditSales = () => {
   const handleProductChange = (index, value) => {
     const newEntries = [...entries];
     newEntries[index].product = value;
+    newEntries[index].price = "";
+    newEntries[index].quantity = "";
+    newEntries[index].subtotal = "";
     setEntries(newEntries);
   };
   const handleUnitChange = (index, value) => {
@@ -319,7 +334,7 @@ const EditSales = () => {
           updatedVoucher.DATE = formattedDate;
           updatedVoucher.VCHSTATUSDATE = formattedDate;
 
-          // Update the party name in relevant fields
+          // Update the party name
           const partyName = selectedPartyName;
           const partyFields = [
             "PARTYLEDGERNAME",
@@ -338,60 +353,97 @@ const EditSales = () => {
 
           // Ensure ALLINVENTORYENTRIES.LIST is an array
           let allInventoryEntries = updatedVoucher["ALLINVENTORYENTRIES.LIST"];
-
           if (!Array.isArray(allInventoryEntries)) {
             allInventoryEntries = [allInventoryEntries];
           }
 
           // Update inventory entries
-          updatedVoucher["ALLINVENTORYENTRIES.LIST"] = allInventoryEntries.map(
-            (existingInventoryEntry, index) => {
-              const updatedEntry = entries[index] || existingInventoryEntry;
-              const unit = updatedEntry.unit || "pcs";
+          updatedVoucher["ALLINVENTORYENTRIES.LIST"] = entries.map(
+            (updatedEntry, index) => {
+              const existingInventoryEntry = allInventoryEntries[index] || {}; // Use existing entry if available, otherwise create a new one
+              const unit =
+                updatedEntry.unit || existingInventoryEntry.UNIT || "pcs";
+
+              // Check if it's a new entry (i.e., there's no existing entry)
+              const isNewEntry = !allInventoryEntries[index];
+
               return {
                 ...existingInventoryEntry,
                 STOCKITEMNAME:
                   updatedEntry.product || existingInventoryEntry.STOCKITEMNAME,
-                RATE:
-                  `${updatedEntry.price}/${unit}` ||
-                  existingInventoryEntry.RATE,
-                ACTUALQTY:
-                  `${updatedEntry.quantity} ${unit}` ||
-                  existingInventoryEntry.ACTUALQTY,
-                BILLEDQTY:
-                  `${updatedEntry.quantity} ${unit}` ||
-                  existingInventoryEntry.BILLEDQTY,
+                RATE: `${
+                  updatedEntry.price ||
+                  existingInventoryEntry.RATE?.split("/")[0]
+                }/${unit}`,
+                ACTUALQTY: `${
+                  updatedEntry.quantity ||
+                  existingInventoryEntry.ACTUALQTY?.split(" ")[0]
+                } ${unit}`,
+                BILLEDQTY: `${
+                  updatedEntry.quantity ||
+                  existingInventoryEntry.BILLEDQTY?.split(" ")[0]
+                } ${unit}`,
                 AMOUNT: updatedEntry.subtotal || existingInventoryEntry.AMOUNT,
-                "BATCHALLOCATIONS.LIST": {
-                  ...existingInventoryEntry["BATCHALLOCATIONS.LIST"],
-                  ACTUALQTY:
-                    `${updatedEntry.quantity} ${unit}` ||
-                    existingInventoryEntry["BATCHALLOCATIONS.LIST"].ACTUALQTY,
-                  BILLEDQTY:
-                    `${updatedEntry.quantity} ${unit}` ||
-                    existingInventoryEntry["BATCHALLOCATIONS.LIST"].BILLEDQTY,
-                  AMOUNT:
-                    updatedEntry.subtotal ||
-                    existingInventoryEntry["BATCHALLOCATIONS.LIST"].AMOUNT,
-                },
-                "ACCOUNTINGALLOCATIONS.LIST": {
-                  ...existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"],
-                  AMOUNT:
-                    updatedEntry.subtotal ||
-                    existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"].AMOUNT,
-                },
+
+                // Default values for BATCHALLOCATIONS.LIST only if new entry
+                "BATCHALLOCATIONS.LIST": isNewEntry
+                  ? {
+                      GODOWNNAME: "Main Location",
+                      BATCHNAME: "Primary Batch",
+                      INDENTNO: "Not Applicable",
+                      ORDERNO: "Not Applicable",
+                      TRACKINGNUMBER: "<![CDATA[&#4; Not Applicable]]>",
+                      ACTUALQTY: `${updatedEntry.quantity || 0} ${unit}`,
+                      BILLEDQTY: `${updatedEntry.quantity || 0} ${unit}`,
+                      AMOUNT: updatedEntry.subtotal || 0,
+                    }
+                  : {
+                      ...existingInventoryEntry["BATCHALLOCATIONS.LIST"],
+                      ACTUALQTY: `${
+                        updatedEntry.quantity ||
+                        existingInventoryEntry[
+                          "BATCHALLOCATIONS.LIST"
+                        ].ACTUALQTY?.split(" ")[0]
+                      } ${unit}`,
+                      BILLEDQTY: `${
+                        updatedEntry.quantity ||
+                        existingInventoryEntry[
+                          "BATCHALLOCATIONS.LIST"
+                        ].BILLEDQTY?.split(" ")[0]
+                      } ${unit}`,
+                      AMOUNT:
+                        updatedEntry.subtotal ||
+                        existingInventoryEntry["BATCHALLOCATIONS.LIST"].AMOUNT,
+                    },
+
+                // Default values for ACCOUNTINGALLOCATIONS.LIST only if new entry
+                "ACCOUNTINGALLOCATIONS.LIST": isNewEntry
+                  ? {
+                      "OLDAUDITENTRYIDS.LIST": {
+                        TYPE: "Number",
+                        OLDAUDITENTRYIDS: "-1",
+                      },
+                      LEDGERNAME: "Sales Ledger",
+                      AMOUNT: updatedEntry.subtotal || 0,
+                    }
+                  : {
+                      ...existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"],
+                      AMOUNT:
+                        updatedEntry.subtotal ||
+                        existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"]
+                          .AMOUNT,
+                    },
               };
             }
           );
 
           // Ensure LEDGERENTRIES.LIST is an array
           let ledgerEntries = updatedVoucher["LEDGERENTRIES.LIST"];
-
           if (!Array.isArray(ledgerEntries)) {
             ledgerEntries = [ledgerEntries];
           }
 
-          // Update the ledger entries while keeping other fields intact
+          // Update the ledger entries
           const grandTotal = getGrandTotal();
           updatedVoucher["LEDGERENTRIES.LIST"] = ledgerEntries.map(
             (ledgerEntry) => ({
