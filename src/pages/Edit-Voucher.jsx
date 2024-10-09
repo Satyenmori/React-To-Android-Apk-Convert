@@ -197,11 +197,32 @@ const EditSales = () => {
             ignoreTextNodeAttr: true,
           });
           const json = parser.parse(file.data);
-          const voucher = json?.TALLYMESSAGE?.VOUCHER?.find(
-            (entry) => entry.GUID === guid
-          );
+
+          let vouchers = json?.TALLYMESSAGE?.VOUCHER;
+
+          // If there is only a single voucher
+          if (!Array.isArray(vouchers)) {
+            vouchers = [vouchers];
+          }
+
+          
+          const voucher = vouchers.find((entry) => entry.GUID === guid);
+
           if (voucher) {
-            setInitialData(voucher);
+            const rawDate = voucher.DATE;
+            let formattedDate = "";
+            if (rawDate && rawDate.length === 8) {
+              formattedDate = `${rawDate.substring(0, 4)}-${rawDate.substring(
+                4,
+                6
+              )}-${rawDate.substring(6, 8)}`;
+            }
+            setInitialData({
+              ...voucher,
+              DATE: formattedDate,
+            });
+            setSelectedPartyName(voucher.PARTYLEDGERNAME);
+
             let inventoryEntries = voucher["ALLINVENTORYENTRIES.LIST"];
             if (!Array.isArray(inventoryEntries)) {
               inventoryEntries = [inventoryEntries];
@@ -344,14 +365,12 @@ const EditSales = () => {
             "BASICBASEPARTYNAME",
           ];
 
-          // Update all related party fields if they exist
           partyFields.forEach((field) => {
             if (updatedVoucher[field] !== undefined) {
               updatedVoucher[field] = partyName;
             }
           });
 
-          // Ensure ALLINVENTORYENTRIES.LIST is an array
           let allInventoryEntries = updatedVoucher["ALLINVENTORYENTRIES.LIST"];
           if (!Array.isArray(allInventoryEntries)) {
             allInventoryEntries = [allInventoryEntries];
@@ -360,11 +379,10 @@ const EditSales = () => {
           // Update inventory entries
           updatedVoucher["ALLINVENTORYENTRIES.LIST"] = entries.map(
             (updatedEntry, index) => {
-              const existingInventoryEntry = allInventoryEntries[index] || {}; // Use existing entry if available, otherwise create a new one
+              const existingInventoryEntry = allInventoryEntries[index] || {};
               const unit =
                 updatedEntry.unit || existingInventoryEntry.UNIT || "pcs";
 
-              // Check if it's a new entry (i.e., there's no existing entry)
               const isNewEntry = !allInventoryEntries[index];
 
               return {
@@ -505,7 +523,7 @@ const EditSales = () => {
           id="date"
           name="date"
           required
-          defaultValue={initialData?.DATE}
+          defaultValue={initialData?.DATE} 
         />
 
         <label htmlFor="party">Party:</label>
