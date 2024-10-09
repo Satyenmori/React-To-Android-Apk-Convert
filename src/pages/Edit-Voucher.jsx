@@ -177,12 +177,22 @@ const EditSales = () => {
   const [selectedPartyName, setSelectedPartyName] = useState(
     initialData?.PARTYLEDGERNAME || ""
   );
+  const [date, setDate] = useState("");
   const [selectedProducts, setSelectedProducts] = useState(
     entries.map((entry) => entry.product || "")
   );
   const { guid } = useParams();
   const navigator = useNavigate();
-
+  const formatDate = (dateString) => {
+    if (typeof dateString !== "string") {
+      return "";
+    }
+    const year = dateString.substring(0, 4);
+    const month = dateString.substring(4, 6);
+    const day = dateString.substring(6, 8);
+    alert(`${year}-${month}-${day}`);
+    return `${year}-${month}-${day}`;
+  };
   useEffect(() => {
     const fetchVoucherData = async () => {
       try {
@@ -200,28 +210,14 @@ const EditSales = () => {
 
           let vouchers = json?.TALLYMESSAGE?.VOUCHER;
 
-          // If there is only a single voucher, it might not be an array, so convert it into one
           if (!Array.isArray(vouchers)) {
             vouchers = [vouchers];
           }
 
-          // Now find the voucher by GUID
           const voucher = vouchers.find((entry) => entry.GUID === guid);
 
           if (voucher) {
-            const rawDate = voucher.DATE;
-            let formattedDate = "";
-            if (rawDate && rawDate.length === 8) {
-              formattedDate = `${rawDate.substring(0, 4)}-${rawDate.substring(
-                4,
-                6
-              )}-${rawDate.substring(6, 8)}`;
-            }
-            setInitialData({
-              ...voucher,
-              DATE: formattedDate,
-            });
-
+            setInitialData(voucher);
             setSelectedPartyName(voucher.PARTYLEDGERNAME);
             let inventoryEntries = voucher["ALLINVENTORYENTRIES.LIST"];
             if (!Array.isArray(inventoryEntries)) {
@@ -235,12 +231,19 @@ const EditSales = () => {
                 subtotal: item.AMOUNT || "0",
               }))
             );
+            if (voucher.DATE) {
+              const formattedDate = formatDate(String(voucher.DATE));
+              setDate(formattedDate);
+              alert("date value: " + formattedDate);
+            }
           }
         }
       } catch (error) {
         console.error("Error fetching voucher data", error);
+        alert("Error fetching voucher data" + error.message);
       }
     };
+
     const fetchPartyNames = async () => {
       try {
         await initDB();
@@ -327,212 +330,207 @@ const EditSales = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-        // Read the existing XML file
-        const file = await Filesystem.readFile({
-            path: "Transaction.xml",
-            directory: Directory.External,
-            encoding: Encoding.UTF8,
+      // Read the existing XML file
+      const file = await Filesystem.readFile({
+        path: "Transaction.xml",
+        directory: Directory.External,
+        encoding: Encoding.UTF8,
+      });
+
+      if (file.data) {
+        const parser = new XMLParser({
+          ignoreAttributes: false,
+          ignoreTextNodeAttr: true,
         });
 
-        if (file.data) {
-            const parser = new XMLParser({
-                ignoreAttributes: false,
-                ignoreTextNodeAttr: true,
-            });
+        // Parse XML to JSON
+        const json = parser.parse(file.data);
+        let vouchers = json?.TALLYMESSAGE?.VOUCHER;
 
-            // Parse XML to JSON
-            const json = parser.parse(file.data);
-            let vouchers = json?.TALLYMESSAGE?.VOUCHER;
-
-            // Ensure vouchers is an array
-            if (!Array.isArray(vouchers)) {
-                vouchers = vouchers ? [vouchers] : []; // Create an array or fallback to empty
-            }
-
-            const voucherIndex = vouchers.findIndex((entry) => entry.GUID === guid);
-
-            if (voucherIndex !== -1) {
-                const updatedVoucher = { ...vouchers[voucherIndex] }; // Use spread operator for deep copy
-
-                // Format the date
-                const rawDate = document.getElementById("date").value;
-                const formattedDate = rawDate.replace(/-/g, "");
-                updatedVoucher.DATE = formattedDate;
-                updatedVoucher.VCHSTATUSDATE = formattedDate;
-
-                // Update the party name
-                const partyName = selectedPartyName;
-                const partyFields = [
-                    "PARTYLEDGERNAME",
-                    "BASICBUYERNAME",
-                    "PARTYMAILINGNAME",
-                    "CONSIGNEEMAILINGNAME",
-                    "BASICBASEPARTYNAME",
-                ];
-
-                partyFields.forEach((field) => {
-                    if (updatedVoucher[field] !== undefined) {
-                        updatedVoucher[field] = partyName;
-                    }
-                });
-
-                let allInventoryEntries = updatedVoucher["ALLINVENTORYENTRIES.LIST"];
-                if (!Array.isArray(allInventoryEntries)) {
-                    allInventoryEntries = [allInventoryEntries];
-                }
-
-                // Update inventory entries
-                updatedVoucher["ALLINVENTORYENTRIES.LIST"] = entries.map(
-                    (updatedEntry, index) => {
-                        const existingInventoryEntry = allInventoryEntries[index] || {};
-                        const unit =
-                            updatedEntry.unit || existingInventoryEntry.UNIT || "pcs";
-
-                        const isNewEntry = !allInventoryEntries[index];
-
-                        return {
-                            ...existingInventoryEntry,
-                            STOCKITEMNAME:
-                                updatedEntry.product || existingInventoryEntry.STOCKITEMNAME,
-                            RATE: `${
-                                updatedEntry.price ||
-                                existingInventoryEntry.RATE?.split("/")[0]
-                            }/${unit}`,
-                            ACTUALQTY: `${
-                                updatedEntry.quantity ||
-                                existingInventoryEntry.ACTUALQTY?.split(" ")[0]
-                            } ${unit}`,
-                            BILLEDQTY: `${
-                                updatedEntry.quantity ||
-                                existingInventoryEntry.BILLEDQTY?.split(" ")[0]
-                            } ${unit}`,
-                            AMOUNT: updatedEntry.subtotal || existingInventoryEntry.AMOUNT,
-
-                            // Default values for BATCHALLOCATIONS.LIST only if new entry
-                            "BATCHALLOCATIONS.LIST": isNewEntry
-                                ? {
-                                    GODOWNNAME: "Main Location",
-                                    BATCHNAME: "Primary Batch",
-                                    INDENTNO: "Not Applicable",
-                                    ORDERNO: "Not Applicable",
-                                    TRACKINGNUMBER: "<![CDATA[&#4; Not Applicable]]>",
-                                    ACTUALQTY: `${updatedEntry.quantity || 0} ${unit}`,
-                                    BILLEDQTY: `${updatedEntry.quantity || 0} ${unit}`,
-                                    AMOUNT: updatedEntry.subtotal || 0,
-                                }
-                                : {
-                                    ...existingInventoryEntry["BATCHALLOCATIONS.LIST"],
-                                    ACTUALQTY: `${
-                                        updatedEntry.quantity ||
-                                        existingInventoryEntry["BATCHALLOCATIONS.LIST"]
-                                            .ACTUALQTY?.split(" ")[0]
-                                    } ${unit}`,
-                                    BILLEDQTY: `${
-                                        updatedEntry.quantity ||
-                                        existingInventoryEntry["BATCHALLOCATIONS.LIST"]
-                                            .BILLEDQTY?.split(" ")[0]
-                                    } ${unit}`,
-                                    AMOUNT:
-                                        updatedEntry.subtotal ||
-                                        existingInventoryEntry["BATCHALLOCATIONS.LIST"].AMOUNT,
-                                },
-
-                            // Default values for ACCOUNTINGALLOCATIONS.LIST only if new entry
-                            "ACCOUNTINGALLOCATIONS.LIST": isNewEntry
-                                ? {
-                                    "OLDAUDITENTRYIDS.LIST": {
-                                        TYPE: "Number",
-                                        OLDAUDITENTRYIDS: "-1",
-                                    },
-                                    LEDGERNAME: "Sales Ledger",
-                                    AMOUNT: updatedEntry.subtotal || 0,
-                                }
-                                : {
-                                    ...existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"],
-                                    AMOUNT:
-                                        updatedEntry.subtotal ||
-                                        existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"]
-                                            .AMOUNT,
-                                },
-                        };
-                    }
-                );
-
-                // Ensure LEDGERENTRIES.LIST is an array
-                let ledgerEntries = updatedVoucher["LEDGERENTRIES.LIST"];
-                if (!Array.isArray(ledgerEntries)) {
-                    ledgerEntries = [ledgerEntries];
-                }
-
-                // Update the ledger entries
-                const grandTotal = getGrandTotal();
-                updatedVoucher["LEDGERENTRIES.LIST"] = ledgerEntries.map(
-                    (ledgerEntry) => ({
-                        ...ledgerEntry,
-                        LEDGERNAME: partyName || ledgerEntry.LEDGERNAME,
-                        AMOUNT: `-${grandTotal}` || ledgerEntry.AMOUNT,
-                        "BILLALLOCATIONS.LIST": {
-                            ...ledgerEntry["BILLALLOCATIONS.LIST"],
-                            AMOUNT:
-                                `-${grandTotal}` ||
-                                ledgerEntry["BILLALLOCATIONS.LIST"].AMOUNT,
-                        },
-                    })
-                );
-
-                // Update the voucher in the main JSON object
-                vouchers[voucherIndex] = updatedVoucher;
-
-                // Convert JSON back to XML
-                const builder = new XMLBuilder({ ignoreAttributes: false });
-                json.TALLYMESSAGE.VOUCHER = vouchers; // Make sure to update the JSON object
-                const updatedXML = builder.build(json);
-
-                // Write the updated XML back to the file
-                await Filesystem.writeFile({
-                    path: "Transaction.xml",
-                    directory: Directory.External,
-                    data: updatedXML,
-                    encoding: "utf8",
-                });
-
-                // Prepare data for database update
-                const products = entries.map((entry) => ({
-                    product: entry.product,
-                    price: entry.price,
-                    quantity: entry.quantity,
-                }));
-
-                // Update the voucher in the database
-                await updateVoucherInDB(partyName, products);
-
-                alert("Voucher updated successfully!");
-                navigator("/voucher");
-            } else {
-                alert("Voucher not found");
-            }
-        } else {
-            alert("No voucher data found");
+        // Ensure vouchers is an array
+        if (!Array.isArray(vouchers)) {
+          vouchers = vouchers ? [vouchers] : [];
         }
-    } catch (error) {
-        console.error("Error updating voucher data", error);
-        alert("Error updating voucher data: " + error.message);
-    }
-};
 
+        const voucherIndex = vouchers.findIndex((entry) => entry.GUID === guid);
+
+        if (voucherIndex !== -1) {
+          const updatedVoucher = { ...vouchers[voucherIndex] };
+
+          // Format the date
+          const rawDate = document.getElementById("date").value;
+          const formattedDate = rawDate.replace(/-/g, "");
+          updatedVoucher.DATE = formattedDate;
+          updatedVoucher.VCHSTATUSDATE = formattedDate;
+
+          // Update the party name
+          const partyName = selectedPartyName;
+          const partyFields = [
+            "PARTYLEDGERNAME",
+            "BASICBUYERNAME",
+            "PARTYMAILINGNAME",
+            "CONSIGNEEMAILINGNAME",
+            "BASICBASEPARTYNAME",
+          ];
+
+          partyFields.forEach((field) => {
+            if (updatedVoucher[field] !== undefined) {
+              updatedVoucher[field] = partyName;
+            }
+          });
+
+          let allInventoryEntries = updatedVoucher["ALLINVENTORYENTRIES.LIST"];
+          if (!Array.isArray(allInventoryEntries)) {
+            allInventoryEntries = [allInventoryEntries];
+          }
+
+          // Update inventory entries
+          updatedVoucher["ALLINVENTORYENTRIES.LIST"] = entries.map(
+            (updatedEntry, index) => {
+              const existingInventoryEntry = allInventoryEntries[index] || {};
+              const unit =
+                updatedEntry.unit || existingInventoryEntry.UNIT || "pcs";
+
+              const isNewEntry = !allInventoryEntries[index];
+
+              return {
+                ...existingInventoryEntry,
+                STOCKITEMNAME:
+                  updatedEntry.product || existingInventoryEntry.STOCKITEMNAME,
+                RATE: `${
+                  updatedEntry.price ||
+                  existingInventoryEntry.RATE?.split("/")[0]
+                }/${unit}`,
+                ACTUALQTY: `${
+                  updatedEntry.quantity ||
+                  existingInventoryEntry.ACTUALQTY?.split(" ")[0]
+                } ${unit}`,
+                BILLEDQTY: `${
+                  updatedEntry.quantity ||
+                  existingInventoryEntry.BILLEDQTY?.split(" ")[0]
+                } ${unit}`,
+                AMOUNT: updatedEntry.subtotal || existingInventoryEntry.AMOUNT,
+
+                // Default values for BATCHALLOCATIONS.LIST only if new entry
+                "BATCHALLOCATIONS.LIST": isNewEntry
+                  ? {
+                      GODOWNNAME: "Main Location",
+                      BATCHNAME: "Primary Batch",
+                      INDENTNO: "Not Applicable",
+                      ORDERNO: "Not Applicable",
+                      TRACKINGNUMBER: "<![CDATA[&#4; Not Applicable]]>",
+                      ACTUALQTY: `${updatedEntry.quantity || 0} ${unit}`,
+                      BILLEDQTY: `${updatedEntry.quantity || 0} ${unit}`,
+                      AMOUNT: updatedEntry.subtotal || 0,
+                    }
+                  : {
+                      ...existingInventoryEntry["BATCHALLOCATIONS.LIST"],
+                      ACTUALQTY: `${
+                        updatedEntry.quantity ||
+                        existingInventoryEntry[
+                          "BATCHALLOCATIONS.LIST"
+                        ].ACTUALQTY?.split(" ")[0]
+                      } ${unit}`,
+                      BILLEDQTY: `${
+                        updatedEntry.quantity ||
+                        existingInventoryEntry[
+                          "BATCHALLOCATIONS.LIST"
+                        ].BILLEDQTY?.split(" ")[0]
+                      } ${unit}`,
+                      AMOUNT:
+                        updatedEntry.subtotal ||
+                        existingInventoryEntry["BATCHALLOCATIONS.LIST"].AMOUNT,
+                    },
+
+                // Default values for ACCOUNTINGALLOCATIONS.LIST only if new entry
+                "ACCOUNTINGALLOCATIONS.LIST": isNewEntry
+                  ? {
+                      "OLDAUDITENTRYIDS.LIST": {
+                        TYPE: "Number",
+                        OLDAUDITENTRYIDS: "-1",
+                      },
+                      LEDGERNAME: "Sales Ledger",
+                      AMOUNT: updatedEntry.subtotal || 0,
+                    }
+                  : {
+                      ...existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"],
+                      AMOUNT:
+                        updatedEntry.subtotal ||
+                        existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"]
+                          .AMOUNT,
+                    },
+              };
+            }
+          );
+
+          // Ensure LEDGERENTRIES.LIST is an array
+          let ledgerEntries = updatedVoucher["LEDGERENTRIES.LIST"];
+          if (!Array.isArray(ledgerEntries)) {
+            ledgerEntries = [ledgerEntries];
+          }
+
+          // Update the ledger entries
+          const grandTotal = getGrandTotal();
+          updatedVoucher["LEDGERENTRIES.LIST"] = ledgerEntries.map(
+            (ledgerEntry) => ({
+              ...ledgerEntry,
+              LEDGERNAME: partyName || ledgerEntry.LEDGERNAME,
+              AMOUNT: `-${grandTotal}` || ledgerEntry.AMOUNT,
+              "BILLALLOCATIONS.LIST": {
+                ...ledgerEntry["BILLALLOCATIONS.LIST"],
+                AMOUNT:
+                  `-${grandTotal}` ||
+                  ledgerEntry["BILLALLOCATIONS.LIST"].AMOUNT,
+              },
+            })
+          );
+
+          // Update the voucher in the main JSON object
+          vouchers[voucherIndex] = updatedVoucher;
+
+          // Convert JSON back to XML
+          const builder = new XMLBuilder({ ignoreAttributes: false });
+          json.TALLYMESSAGE.VOUCHER = vouchers; // Make sure to update the JSON object
+          const updatedXML = builder.build(json);
+
+          // Write the updated XML back to the file
+          await Filesystem.writeFile({
+            path: "Transaction.xml",
+            directory: Directory.External,
+            data: updatedXML,
+            encoding: "utf8",
+          });
+
+          // Prepare data for database update
+          const products = entries.map((entry) => ({
+            product: entry.product,
+            price: entry.price,
+            quantity: entry.quantity,
+          }));
+
+          // Update the voucher in the database
+          await updateVoucherInDB(partyName, products);
+
+          alert("Voucher updated successfully!");
+          navigator("/voucher");
+        } else {
+          alert("Voucher not found");
+        }
+      } else {
+        alert("No voucher data found");
+      }
+    } catch (error) {
+      console.error("Error updating voucher data", error);
+      alert("Error updating voucher data: " + error.message);
+    }
+  };
 
   return (
     <div className="container">
       <h1 className="title">Edit Sales Form</h1>
       <form className="sales-form" onSubmit={handleSubmit}>
         <label htmlFor="date">Date:</label>
-        <input
-          type="date"
-          id="date"
-          name="date"
-          required
-          defaultValue={initialData?.DATE}
-        />
+        <input type="date" id="date" name="date" required defaultValue={date} />
 
         <label htmlFor="party">Party:</label>
         <CustomSelectBox
