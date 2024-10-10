@@ -328,42 +328,36 @@ const EditSales = () => {
   };
 
   const handleSubmit = async (event) => {
-    event.preventDefault();
-    try {
-      // Read the existing XML file
-      const file = await Filesystem.readFile({
-        path: "Transaction.xml",
-        directory: Directory.External,
-        encoding: Encoding.UTF8,
-      });
+  event.preventDefault();
+  try {
+    // Read the existing XML file
+    const file = await Filesystem.readFile({
+      path: "Transaction.xml",
+      directory: Directory.External,
+      encoding: Encoding.UTF8,
+    });
 
-      if (file.data) {
-        const parser = new XMLParser({
-          ignoreAttributes: false,
-          ignoreTextNodeAttr: true,
-        });
+    if (file.data) {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(file.data, "text/xml");
 
-        // Parse XML to JSON
-        const json = parser.parse(file.data);
-        let vouchers = json?.TALLYMESSAGE?.VOUCHER;
+      const vouchers = xmlDoc.getElementsByTagName("VOUCHER");
+      let voucherFound = false;
 
-        // Ensure vouchers is an array
-        if (!Array.isArray(vouchers)) {
-          vouchers = vouchers ? [vouchers] : [];
-        }
+      for (let i = 0; i < vouchers.length; i++) {
+        const voucher = vouchers[i];
+        const guidElement = voucher.getElementsByTagName("GUID")[0];
 
-        const voucherIndex = vouchers.findIndex((entry) => entry.GUID === guid);
+        if (guidElement && guidElement.textContent === guid) {
+          voucherFound = true;
 
-        if (voucherIndex !== -1) {
-          const updatedVoucher = { ...vouchers[voucherIndex] };
-
-          // Format the date
+          // Update the date
           const rawDate = document.getElementById("date").value;
           const formattedDate = rawDate.replace(/-/g, "");
-          updatedVoucher.DATE = formattedDate;
-          updatedVoucher.VCHSTATUSDATE = formattedDate;
+          voucher.getElementsByTagName("DATE")[0].textContent = formattedDate;
+          voucher.getElementsByTagName("VCHSTATUSDATE")[0].textContent =
+            formattedDate;
 
-          // Update the party name
           const partyName = selectedPartyName;
           const partyFields = [
             "PARTYLEDGERNAME",
@@ -374,126 +368,177 @@ const EditSales = () => {
           ];
 
           partyFields.forEach((field) => {
-            if (updatedVoucher[field] !== undefined) {
-              updatedVoucher[field] = partyName;
+            const fieldElement = voucher.getElementsByTagName(field)[0];
+            if (fieldElement) {
+              fieldElement.textContent = partyName;
             }
           });
 
-          let allInventoryEntries = updatedVoucher["ALLINVENTORYENTRIES.LIST"];
-          if (!Array.isArray(allInventoryEntries)) {
-            allInventoryEntries = [allInventoryEntries];
-          }
-
           // Update inventory entries
-          updatedVoucher["ALLINVENTORYENTRIES.LIST"] = entries.map(
-            (updatedEntry, index) => {
-              const existingInventoryEntry = allInventoryEntries[index] || {};
-              const unit =
-                updatedEntry.unit || existingInventoryEntry.UNIT || "pcs";
-
-              const isNewEntry = !allInventoryEntries[index];
-
-              return {
-                ...existingInventoryEntry,
-                STOCKITEMNAME:
-                  updatedEntry.product || existingInventoryEntry.STOCKITEMNAME,
-                RATE: `${
-                  updatedEntry.price ||
-                  existingInventoryEntry.RATE?.split("/")[0]
-                }/${unit}`,
-                ACTUALQTY: `${
-                  updatedEntry.quantity ||
-                  existingInventoryEntry.ACTUALQTY?.split(" ")[0]
-                } ${unit}`,
-                BILLEDQTY: `${
-                  updatedEntry.quantity ||
-                  existingInventoryEntry.BILLEDQTY?.split(" ")[0]
-                } ${unit}`,
-                AMOUNT: updatedEntry.subtotal || existingInventoryEntry.AMOUNT,
-
-                // Default values for BATCHALLOCATIONS.LIST only if new entry
-                "BATCHALLOCATIONS.LIST": isNewEntry
-                  ? {
-                      GODOWNNAME: "Main Location",
-                      BATCHNAME: "Primary Batch",
-                      INDENTNO: "Not Applicable",
-                      ORDERNO: "Not Applicable",
-                      TRACKINGNUMBER: "<![CDATA[&#4; Not Applicable]]>",
-                      ACTUALQTY: `${updatedEntry.quantity || 0} ${unit}`,
-                      BILLEDQTY: `${updatedEntry.quantity || 0} ${unit}`,
-                      AMOUNT: updatedEntry.subtotal || 0,
-                    }
-                  : {
-                      ...existingInventoryEntry["BATCHALLOCATIONS.LIST"],
-                      ACTUALQTY: `${
-                        updatedEntry.quantity ||
-                        existingInventoryEntry[
-                          "BATCHALLOCATIONS.LIST"
-                        ].ACTUALQTY?.split(" ")[0]
-                      } ${unit}`,
-                      BILLEDQTY: `${
-                        updatedEntry.quantity ||
-                        existingInventoryEntry[
-                          "BATCHALLOCATIONS.LIST"
-                        ].BILLEDQTY?.split(" ")[0]
-                      } ${unit}`,
-                      AMOUNT:
-                        updatedEntry.subtotal ||
-                        existingInventoryEntry["BATCHALLOCATIONS.LIST"].AMOUNT,
-                    },
-
-                // Default values for ACCOUNTINGALLOCATIONS.LIST only if new entry
-                "ACCOUNTINGALLOCATIONS.LIST": isNewEntry
-                  ? {
-                      "OLDAUDITENTRYIDS.LIST": {
-                        TYPE: "Number",
-                        OLDAUDITENTRYIDS: "-1",
-                      },
-                      LEDGERNAME: "Sales Ledger",
-                      AMOUNT: updatedEntry.subtotal || 0,
-                    }
-                  : {
-                      ...existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"],
-                      AMOUNT:
-                        updatedEntry.subtotal ||
-                        existingInventoryEntry["ACCOUNTINGALLOCATIONS.LIST"]
-                          .AMOUNT,
-                    },
-              };
-            }
+          const inventoryEntries = voucher.getElementsByTagName(
+            "ALLINVENTORYENTRIES.LIST"
           );
 
-          // Ensure LEDGERENTRIES.LIST is an array
-          let ledgerEntries = updatedVoucher["LEDGERENTRIES.LIST"];
-          if (!Array.isArray(ledgerEntries)) {
-            ledgerEntries = [ledgerEntries];
+          entries.forEach((updatedEntry, index) => {
+            let existingEntry;
+
+            // If there's an existing entry, update it; if not, create a new entry
+            if (inventoryEntries[index]) {
+              existingEntry = inventoryEntries[index];
+            } else {
+              existingEntry = xmlDoc.createElement("ALLINVENTORYENTRIES.LIST");
+              voucher.appendChild(existingEntry);
+
+              // Add default BATCHALLOCATIONS.LIST on new entry
+              const batchAllocations = xmlDoc.createElement("BATCHALLOCATIONS.LIST");
+              existingEntry.appendChild(batchAllocations);
+
+              const godownName = xmlDoc.createElement("GODOWNNAME");
+              godownName.textContent = "Main Location";
+              batchAllocations.appendChild(godownName);
+
+              const batchName = xmlDoc.createElement("BATCHNAME");
+              batchName.textContent = "Primary Batch";
+              batchAllocations.appendChild(batchName);
+
+              const indentNo = xmlDoc.createElement("INDENTNO");
+              indentNo.textContent = "Not Applicable";
+              batchAllocations.appendChild(indentNo);
+
+              const orderNo = xmlDoc.createElement("ORDERNO");
+              orderNo.textContent = "Not Applicable";
+              batchAllocations.appendChild(orderNo);
+            }
+
+            const unit =
+              updatedEntry.unit ||
+              existingEntry.getElementsByTagName("UNIT")[0]?.textContent ||
+              "pcs";
+
+            // Update or add new inventory entry
+            const stockItemNameElement =
+              existingEntry.getElementsByTagName("STOCKITEMNAME")[0] ||
+              existingEntry.appendChild(
+                xmlDoc.createElement("STOCKITEMNAME")
+              );
+            stockItemNameElement.textContent =
+              updatedEntry.product || stockItemNameElement.textContent;
+
+            const rateElement =
+              existingEntry.getElementsByTagName("RATE")[0] ||
+              existingEntry.appendChild(xmlDoc.createElement("RATE"));
+            rateElement.textContent = `${
+              updatedEntry.price || rateElement.textContent.split("/")[0]
+            }/${unit}`;
+
+            const actualQtyElement =
+              existingEntry.getElementsByTagName("ACTUALQTY")[0] ||
+              existingEntry.appendChild(xmlDoc.createElement("ACTUALQTY"));
+            actualQtyElement.textContent = `${
+              updatedEntry.quantity ||
+              actualQtyElement.textContent.split(" ")[0]
+            } ${unit}`;
+
+            const billedQtyElement =
+              existingEntry.getElementsByTagName("BILLEDQTY")[0] ||
+              existingEntry.appendChild(xmlDoc.createElement("BILLEDQTY"));
+            billedQtyElement.textContent = `${
+              updatedEntry.quantity ||
+              billedQtyElement.textContent.split(" ")[0]
+            } ${unit}`;
+
+            const amountElement =
+              existingEntry.getElementsByTagName("AMOUNT")[0] ||
+              existingEntry.appendChild(xmlDoc.createElement("AMOUNT"));
+            amountElement.textContent =
+              updatedEntry.subtotal || amountElement.textContent;
+
+            // Ensure BATCHALLOCATIONS.LIST is updated or created
+            let batchAllocations =
+              existingEntry.getElementsByTagName("BATCHALLOCATIONS.LIST")[0];
+            if (!batchAllocations) {
+              batchAllocations = xmlDoc.createElement("BATCHALLOCATIONS.LIST");
+              existingEntry.appendChild(batchAllocations);
+            }
+
+            // Add default tracking number if new entry
+            const trackingNumberElement =
+              batchAllocations.getElementsByTagName("TRACKINGNUMBER")[0] ||
+              batchAllocations.appendChild(
+                xmlDoc.createElement("TRACKINGNUMBER")
+              );
+            trackingNumberElement.textContent = "&#4; Not Applicable"; 
+
+            const actualQtyBatchElement =
+              batchAllocations.getElementsByTagName("ACTUALQTY")[0] ||
+              batchAllocations.appendChild(xmlDoc.createElement("ACTUALQTY"));
+            actualQtyBatchElement.textContent = updatedEntry.quantity || 0;
+
+            const billedQtyBatchElement =
+              batchAllocations.getElementsByTagName("BILLEDQTY")[0] ||
+              batchAllocations.appendChild(xmlDoc.createElement("BILLEDQTY"));
+            billedQtyBatchElement.textContent = updatedEntry.quantity || 0;
+
+            const amountBatchElement =
+              batchAllocations.getElementsByTagName("AMOUNT")[0] ||
+              batchAllocations.appendChild(xmlDoc.createElement("AMOUNT"));
+            amountBatchElement.textContent = updatedEntry.subtotal || 0;
+
+            // Update ACCOUNTINGALLOCATIONS.LIST for the corresponding entry
+            let accountingAllocations =
+              existingEntry.getElementsByTagName("ACCOUNTINGALLOCATIONS.LIST")[0];
+            if (!accountingAllocations) {
+              accountingAllocations = xmlDoc.createElement(
+                "ACCOUNTINGALLOCATIONS.LIST"
+              );
+              existingEntry.appendChild(accountingAllocations);
+            }
+
+            // Create OLDAUDITENTRYIDS.LIST
+            const oldAuditEntryIdsList = xmlDoc.createElement("OLDAUDITENTRYIDS.LIST");
+            const oldAuditEntryIds = xmlDoc.createElement("OLDAUDITENTRYIDS");
+            oldAuditEntryIds.textContent = "-1";
+            oldAuditEntryIdsList.appendChild(oldAuditEntryIds);
+            accountingAllocations.appendChild(oldAuditEntryIdsList);
+
+            // Create LEDGERNAME element
+            const ledgerNameElement =
+              accountingAllocations.getElementsByTagName("LEDGERNAME")[0] ||
+              accountingAllocations.appendChild(xmlDoc.createElement("LEDGERNAME"));
+            ledgerNameElement.textContent = "Sales Ledger";
+
+            // Update accounting amount
+            const accountingAmountElement =
+              accountingAllocations.getElementsByTagName("AMOUNT")[0] ||
+              accountingAllocations.appendChild(
+                xmlDoc.createElement("AMOUNT")
+              );
+            accountingAmountElement.textContent = updatedEntry.subtotal || 0;
+          });
+
+          // Update ledger entries (if needed)
+          const ledgerEntries =
+            voucher.getElementsByTagName("LEDGERENTRIES.LIST");
+          const grandTotal = getGrandTotal();
+
+          for (let j = 0; j < ledgerEntries.length; j++) {
+            const ledgerEntry = ledgerEntries[j];
+            ledgerEntry.getElementsByTagName("LEDGERNAME")[0].textContent =
+              partyName ||
+              ledgerEntry.getElementsByTagName("LEDGERNAME")[0].textContent;
+            ledgerEntry.getElementsByTagName(
+              "AMOUNT"
+            )[0].textContent = `-${grandTotal}`;
+            ledgerEntry.getElementsByTagName(
+              "BILLALLOCATIONS.LIST"
+            )[0].textContent = `-${grandTotal}`;
           }
 
-          // Update the ledger entries
-          const grandTotal = getGrandTotal();
-          updatedVoucher["LEDGERENTRIES.LIST"] = ledgerEntries.map(
-            (ledgerEntry) => ({
-              ...ledgerEntry,
-              LEDGERNAME: partyName || ledgerEntry.LEDGERNAME,
-              AMOUNT: `-${grandTotal}` || ledgerEntry.AMOUNT,
-              "BILLALLOCATIONS.LIST": {
-                ...ledgerEntry["BILLALLOCATIONS.LIST"],
-                AMOUNT:
-                  `-${grandTotal}` ||
-                  ledgerEntry["BILLALLOCATIONS.LIST"].AMOUNT,
-              },
-            })
-          );
+          
+          const serializer = new XMLSerializer();
+          const updatedXML = serializer.serializeToString(xmlDoc);
 
-          // Update the voucher in the main JSON object
-          vouchers[voucherIndex] = updatedVoucher;
-
-          // Convert JSON back to XML
-          const builder = new XMLBuilder({ ignoreAttributes: false });
-          json.TALLYMESSAGE.VOUCHER = vouchers; // Make sure to update the JSON object
-          const updatedXML = builder.build(json);
-
-          // Write the updated XML back to the file
+          
           await Filesystem.writeFile({
             path: "Transaction.xml",
             directory: Directory.External,
@@ -513,17 +558,22 @@ const EditSales = () => {
 
           alert("Voucher updated successfully!");
           navigator("/voucher");
-        } else {
-          alert("Voucher not found");
+          break;
         }
-      } else {
-        alert("No voucher data found");
       }
-    } catch (error) {
-      console.error("Error updating voucher data", error);
-      alert("Error updating voucher data: " + error.message);
+
+      if (!voucherFound) {
+        alert("Voucher not found");
+      }
+    } else {
+      alert("No voucher data found");
     }
-  };
+  } catch (error) {
+    console.error("Error updating voucher data", error);
+    alert("Error updating voucher data: " + error.message);
+  }
+};
+
 
   return (
     <div className="container">
