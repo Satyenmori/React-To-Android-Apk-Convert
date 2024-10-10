@@ -328,252 +328,270 @@ const EditSales = () => {
   };
 
   const handleSubmit = async (event) => {
-  event.preventDefault();
-  try {
-    // Read the existing XML file
-    const file = await Filesystem.readFile({
-      path: "Transaction.xml",
-      directory: Directory.External,
-      encoding: Encoding.UTF8,
-    });
+    event.preventDefault();
+    try {
+      // Read the existing XML file
+      const file = await Filesystem.readFile({
+        path: "Transaction.xml",
+        directory: Directory.External,
+        encoding: Encoding.UTF8,
+      });
 
-    if (file.data) {
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(file.data, "text/xml");
+      if (file.data) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(file.data, "text/xml");
 
-      const vouchers = xmlDoc.getElementsByTagName("VOUCHER");
-      let voucherFound = false;
+        const vouchers = xmlDoc.getElementsByTagName("VOUCHER");
+        let voucherFound = false;
 
-      for (let i = 0; i < vouchers.length; i++) {
-        const voucher = vouchers[i];
-        const guidElement = voucher.getElementsByTagName("GUID")[0];
+        for (let i = 0; i < vouchers.length; i++) {
+          const voucher = vouchers[i];
+          const guidElement = voucher.getElementsByTagName("GUID")[0];
 
-        if (guidElement && guidElement.textContent === guid) {
-          voucherFound = true;
+          if (guidElement && guidElement.textContent === guid) {
+            voucherFound = true;
 
-          // Update the date
-          const rawDate = document.getElementById("date").value;
-          const formattedDate = rawDate.replace(/-/g, "");
-          voucher.getElementsByTagName("DATE")[0].textContent = formattedDate;
-          voucher.getElementsByTagName("VCHSTATUSDATE")[0].textContent =
-            formattedDate;
+            // Update the date
+            const rawDate = document.getElementById("date").value;
+            const formattedDate = rawDate.replace(/-/g, "");
+            voucher.getElementsByTagName("DATE")[0].textContent = formattedDate;
+            voucher.getElementsByTagName("VCHSTATUSDATE")[0].textContent =
+              formattedDate;
 
-          const partyName = selectedPartyName;
-          const partyFields = [
-            "PARTYLEDGERNAME",
-            "BASICBUYERNAME",
-            "PARTYMAILINGNAME",
-            "CONSIGNEEMAILINGNAME",
-            "BASICBASEPARTYNAME",
-          ];
+            const partyName = selectedPartyName;
+            const partyFields = [
+              "PARTYLEDGERNAME",
+              "BASICBUYERNAME",
+              "PARTYMAILINGNAME",
+              "CONSIGNEEMAILINGNAME",
+              "BASICBASEPARTYNAME",
+            ];
 
-          partyFields.forEach((field) => {
-            const fieldElement = voucher.getElementsByTagName(field)[0];
-            if (fieldElement) {
-              fieldElement.textContent = partyName;
-            }
-          });
+            partyFields.forEach((field) => {
+              const fieldElement = voucher.getElementsByTagName(field)[0];
+              if (fieldElement) {
+                fieldElement.textContent = partyName;
+              }
+            });
 
-          // Update inventory entries
-          const inventoryEntries = voucher.getElementsByTagName(
-            "ALLINVENTORYENTRIES.LIST"
-          );
+            // Update inventory entries
+            const inventoryEntries = voucher.getElementsByTagName(
+              "ALLINVENTORYENTRIES.LIST"
+            );
 
-          entries.forEach((updatedEntry, index) => {
-            let existingEntry;
+            entries.forEach((updatedEntry, index) => {
+              let existingEntry;
 
-            // If there's an existing entry, update it; if not, create a new entry
-            if (inventoryEntries[index]) {
-              existingEntry = inventoryEntries[index];
-            } else {
-              existingEntry = xmlDoc.createElement("ALLINVENTORYENTRIES.LIST");
-              voucher.appendChild(existingEntry);
+              // If there's an existing entry, update it; if not, create a new entry
+              if (inventoryEntries[index]) {
+                existingEntry = inventoryEntries[index];
+              } else {
+                existingEntry = xmlDoc.createElement(
+                  "ALLINVENTORYENTRIES.LIST"
+                );
+                voucher.appendChild(existingEntry);
 
-              // Add default BATCHALLOCATIONS.LIST on new entry
-              const batchAllocations = xmlDoc.createElement("BATCHALLOCATIONS.LIST");
-              existingEntry.appendChild(batchAllocations);
+                // Add default BATCHALLOCATIONS.LIST on new entry
+                const batchAllocations = xmlDoc.createElement(
+                  "BATCHALLOCATIONS.LIST"
+                );
+                existingEntry.appendChild(batchAllocations);
 
-              const godownName = xmlDoc.createElement("GODOWNNAME");
-              godownName.textContent = "Main Location";
-              batchAllocations.appendChild(godownName);
+                const godownName = xmlDoc.createElement("GODOWNNAME");
+                godownName.textContent = "Main Location";
+                batchAllocations.appendChild(godownName);
 
-              const batchName = xmlDoc.createElement("BATCHNAME");
-              batchName.textContent = "Primary Batch";
-              batchAllocations.appendChild(batchName);
+                const batchName = xmlDoc.createElement("BATCHNAME");
+                batchName.textContent = "Primary Batch";
+                batchAllocations.appendChild(batchName);
 
-              const indentNo = xmlDoc.createElement("INDENTNO");
-              indentNo.textContent = "Not Applicable";
-              batchAllocations.appendChild(indentNo);
+                const indentNo = xmlDoc.createElement("INDENTNO");
+                indentNo.textContent = "Not Applicable";
+                batchAllocations.appendChild(indentNo);
 
-              const orderNo = xmlDoc.createElement("ORDERNO");
-              orderNo.textContent = "Not Applicable";
-              batchAllocations.appendChild(orderNo);
-            }
+                const orderNo = xmlDoc.createElement("ORDERNO");
+                orderNo.textContent = "Not Applicable";
+                batchAllocations.appendChild(orderNo);
+              }
 
-            const unit =
-              updatedEntry.unit ||
-              existingEntry.getElementsByTagName("UNIT")[0]?.textContent ||
-              "pcs";
+              const unit =
+                updatedEntry.unit ||
+                existingEntry.getElementsByTagName("UNIT")[0]?.textContent ||
+                "pcs";
 
-            // Update or add new inventory entry
-            const stockItemNameElement =
-              existingEntry.getElementsByTagName("STOCKITEMNAME")[0] ||
-              existingEntry.appendChild(
-                xmlDoc.createElement("STOCKITEMNAME")
+              // Update or add new inventory entry
+              const stockItemNameElement =
+                existingEntry.getElementsByTagName("STOCKITEMNAME")[0] ||
+                existingEntry.appendChild(
+                  xmlDoc.createElement("STOCKITEMNAME")
+                );
+              stockItemNameElement.textContent =
+                updatedEntry.product || stockItemNameElement.textContent;
+
+              const rateElement =
+                existingEntry.getElementsByTagName("RATE")[0] ||
+                existingEntry.appendChild(xmlDoc.createElement("RATE"));
+              rateElement.textContent = `${
+                updatedEntry.price || rateElement.textContent.split("/")[0]
+              }/${unit}`;
+
+              const actualQtyElement =
+                existingEntry.getElementsByTagName("ACTUALQTY")[0] ||
+                existingEntry.appendChild(xmlDoc.createElement("ACTUALQTY"));
+              actualQtyElement.textContent = `${
+                updatedEntry.quantity ||
+                actualQtyElement.textContent.split(" ")[0]
+              } ${unit}`;
+
+              const billedQtyElement =
+                existingEntry.getElementsByTagName("BILLEDQTY")[0] ||
+                existingEntry.appendChild(xmlDoc.createElement("BILLEDQTY"));
+              billedQtyElement.textContent = `${
+                updatedEntry.quantity ||
+                billedQtyElement.textContent.split(" ")[0]
+              } ${unit}`;
+
+              const amountElement =
+                existingEntry.getElementsByTagName("AMOUNT")[0] ||
+                existingEntry.appendChild(xmlDoc.createElement("AMOUNT"));
+              amountElement.textContent =
+                updatedEntry.subtotal || amountElement.textContent;
+
+              // Ensure BATCHALLOCATIONS.LIST is updated or created
+              let batchAllocations = existingEntry.getElementsByTagName(
+                "BATCHALLOCATIONS.LIST"
+              )[0];
+              if (!batchAllocations) {
+                batchAllocations = xmlDoc.createElement(
+                  "BATCHALLOCATIONS.LIST"
+                );
+                existingEntry.appendChild(batchAllocations);
+              }
+
+              // Add default tracking number if new entry
+              const trackingNumberElement =
+                batchAllocations.getElementsByTagName("TRACKINGNUMBER")[0] ||
+                batchAllocations.appendChild(
+                  xmlDoc.createElement("TRACKINGNUMBER")
+                );
+              if (trackingNumberElement.firstChild) {
+                trackingNumberElement.removeChild(
+                  trackingNumberElement.firstChild
+                );
+              }
+              // trackingNumberElement.textContent = "&#4; Not Applicable";
+              const trackingNumberValue = xmlDoc.createCDATASection(
+                "&#4; Not Applicable"
               );
-            stockItemNameElement.textContent =
-              updatedEntry.product || stockItemNameElement.textContent;
+              trackingNumberElement.appendChild(trackingNumberValue);
+              
+              const actualQtyBatchElement =
+                batchAllocations.getElementsByTagName("ACTUALQTY")[0] ||
+                batchAllocations.appendChild(xmlDoc.createElement("ACTUALQTY"));
+              actualQtyBatchElement.textContent = updatedEntry.quantity || 0;
 
-            const rateElement =
-              existingEntry.getElementsByTagName("RATE")[0] ||
-              existingEntry.appendChild(xmlDoc.createElement("RATE"));
-            rateElement.textContent = `${
-              updatedEntry.price || rateElement.textContent.split("/")[0]
-            }/${unit}`;
+              const billedQtyBatchElement =
+                batchAllocations.getElementsByTagName("BILLEDQTY")[0] ||
+                batchAllocations.appendChild(xmlDoc.createElement("BILLEDQTY"));
+              billedQtyBatchElement.textContent = updatedEntry.quantity || 0;
 
-            const actualQtyElement =
-              existingEntry.getElementsByTagName("ACTUALQTY")[0] ||
-              existingEntry.appendChild(xmlDoc.createElement("ACTUALQTY"));
-            actualQtyElement.textContent = `${
-              updatedEntry.quantity ||
-              actualQtyElement.textContent.split(" ")[0]
-            } ${unit}`;
+              const amountBatchElement =
+                batchAllocations.getElementsByTagName("AMOUNT")[0] ||
+                batchAllocations.appendChild(xmlDoc.createElement("AMOUNT"));
+              amountBatchElement.textContent = updatedEntry.subtotal || 0;
 
-            const billedQtyElement =
-              existingEntry.getElementsByTagName("BILLEDQTY")[0] ||
-              existingEntry.appendChild(xmlDoc.createElement("BILLEDQTY"));
-            billedQtyElement.textContent = `${
-              updatedEntry.quantity ||
-              billedQtyElement.textContent.split(" ")[0]
-            } ${unit}`;
-
-            const amountElement =
-              existingEntry.getElementsByTagName("AMOUNT")[0] ||
-              existingEntry.appendChild(xmlDoc.createElement("AMOUNT"));
-            amountElement.textContent =
-              updatedEntry.subtotal || amountElement.textContent;
-
-            // Ensure BATCHALLOCATIONS.LIST is updated or created
-            let batchAllocations =
-              existingEntry.getElementsByTagName("BATCHALLOCATIONS.LIST")[0];
-            if (!batchAllocations) {
-              batchAllocations = xmlDoc.createElement("BATCHALLOCATIONS.LIST");
-              existingEntry.appendChild(batchAllocations);
-            }
-
-            // Add default tracking number if new entry
-            const trackingNumberElement =
-              batchAllocations.getElementsByTagName("TRACKINGNUMBER")[0] ||
-              batchAllocations.appendChild(
-                xmlDoc.createElement("TRACKINGNUMBER")
-              );
-            trackingNumberElement.textContent = "&#4; Not Applicable"; 
-
-            const actualQtyBatchElement =
-              batchAllocations.getElementsByTagName("ACTUALQTY")[0] ||
-              batchAllocations.appendChild(xmlDoc.createElement("ACTUALQTY"));
-            actualQtyBatchElement.textContent = updatedEntry.quantity || 0;
-
-            const billedQtyBatchElement =
-              batchAllocations.getElementsByTagName("BILLEDQTY")[0] ||
-              batchAllocations.appendChild(xmlDoc.createElement("BILLEDQTY"));
-            billedQtyBatchElement.textContent = updatedEntry.quantity || 0;
-
-            const amountBatchElement =
-              batchAllocations.getElementsByTagName("AMOUNT")[0] ||
-              batchAllocations.appendChild(xmlDoc.createElement("AMOUNT"));
-            amountBatchElement.textContent = updatedEntry.subtotal || 0;
-
-            // Update ACCOUNTINGALLOCATIONS.LIST for the corresponding entry
-            let accountingAllocations =
-              existingEntry.getElementsByTagName("ACCOUNTINGALLOCATIONS.LIST")[0];
-            if (!accountingAllocations) {
-              accountingAllocations = xmlDoc.createElement(
+              // Update ACCOUNTINGALLOCATIONS.LIST for the corresponding entry
+              let accountingAllocations = existingEntry.getElementsByTagName(
                 "ACCOUNTINGALLOCATIONS.LIST"
+              )[0];
+              if (!accountingAllocations) {
+                accountingAllocations = xmlDoc.createElement(
+                  "ACCOUNTINGALLOCATIONS.LIST"
+                );
+                existingEntry.appendChild(accountingAllocations);
+              }
+
+              // Create OLDAUDITENTRYIDS.LIST
+              const oldAuditEntryIdsList = xmlDoc.createElement(
+                "OLDAUDITENTRYIDS.LIST"
               );
-              existingEntry.appendChild(accountingAllocations);
+              const oldAuditEntryIds = xmlDoc.createElement("OLDAUDITENTRYIDS");
+              oldAuditEntryIds.textContent = "-1";
+              oldAuditEntryIdsList.appendChild(oldAuditEntryIds);
+              accountingAllocations.appendChild(oldAuditEntryIdsList);
+
+              // Create LEDGERNAME element
+              const ledgerNameElement =
+                accountingAllocations.getElementsByTagName("LEDGERNAME")[0] ||
+                accountingAllocations.appendChild(
+                  xmlDoc.createElement("LEDGERNAME")
+                );
+              ledgerNameElement.textContent = "Sales Ledger";
+
+              // Update accounting amount
+              const accountingAmountElement =
+                accountingAllocations.getElementsByTagName("AMOUNT")[0] ||
+                accountingAllocations.appendChild(
+                  xmlDoc.createElement("AMOUNT")
+                );
+              accountingAmountElement.textContent = updatedEntry.subtotal || 0;
+            });
+
+            // Update ledger entries (if needed)
+            const ledgerEntries =
+              voucher.getElementsByTagName("LEDGERENTRIES.LIST");
+            const grandTotal = getGrandTotal();
+
+            for (let j = 0; j < ledgerEntries.length; j++) {
+              const ledgerEntry = ledgerEntries[j];
+              ledgerEntry.getElementsByTagName("LEDGERNAME")[0].textContent =
+                partyName ||
+                ledgerEntry.getElementsByTagName("LEDGERNAME")[0].textContent;
+              ledgerEntry.getElementsByTagName(
+                "AMOUNT"
+              )[0].textContent = `-${grandTotal}`;
+              ledgerEntry.getElementsByTagName(
+                "BILLALLOCATIONS.LIST"
+              )[0].textContent = `-${grandTotal}`;
             }
 
-            // Create OLDAUDITENTRYIDS.LIST
-            const oldAuditEntryIdsList = xmlDoc.createElement("OLDAUDITENTRYIDS.LIST");
-            const oldAuditEntryIds = xmlDoc.createElement("OLDAUDITENTRYIDS");
-            oldAuditEntryIds.textContent = "-1";
-            oldAuditEntryIdsList.appendChild(oldAuditEntryIds);
-            accountingAllocations.appendChild(oldAuditEntryIdsList);
+            const serializer = new XMLSerializer();
+            const updatedXML = serializer.serializeToString(xmlDoc);
 
-            // Create LEDGERNAME element
-            const ledgerNameElement =
-              accountingAllocations.getElementsByTagName("LEDGERNAME")[0] ||
-              accountingAllocations.appendChild(xmlDoc.createElement("LEDGERNAME"));
-            ledgerNameElement.textContent = "Sales Ledger";
+            await Filesystem.writeFile({
+              path: "Transaction.xml",
+              directory: Directory.External,
+              data: updatedXML,
+              encoding: "utf8",
+            });
 
-            // Update accounting amount
-            const accountingAmountElement =
-              accountingAllocations.getElementsByTagName("AMOUNT")[0] ||
-              accountingAllocations.appendChild(
-                xmlDoc.createElement("AMOUNT")
-              );
-            accountingAmountElement.textContent = updatedEntry.subtotal || 0;
-          });
+            // Prepare data for database update
+            const products = entries.map((entry) => ({
+              product: entry.product,
+              price: entry.price,
+              quantity: entry.quantity,
+            }));
 
-          // Update ledger entries (if needed)
-          const ledgerEntries =
-            voucher.getElementsByTagName("LEDGERENTRIES.LIST");
-          const grandTotal = getGrandTotal();
+            // Update the voucher in the database
+            await updateVoucherInDB(partyName, products);
 
-          for (let j = 0; j < ledgerEntries.length; j++) {
-            const ledgerEntry = ledgerEntries[j];
-            ledgerEntry.getElementsByTagName("LEDGERNAME")[0].textContent =
-              partyName ||
-              ledgerEntry.getElementsByTagName("LEDGERNAME")[0].textContent;
-            ledgerEntry.getElementsByTagName(
-              "AMOUNT"
-            )[0].textContent = `-${grandTotal}`;
-            ledgerEntry.getElementsByTagName(
-              "BILLALLOCATIONS.LIST"
-            )[0].textContent = `-${grandTotal}`;
+            alert("Voucher updated successfully!");
+            navigator("/voucher");
+            break;
           }
-
-          
-          const serializer = new XMLSerializer();
-          const updatedXML = serializer.serializeToString(xmlDoc);
-
-          
-          await Filesystem.writeFile({
-            path: "Transaction.xml",
-            directory: Directory.External,
-            data: updatedXML,
-            encoding: "utf8",
-          });
-
-          // Prepare data for database update
-          const products = entries.map((entry) => ({
-            product: entry.product,
-            price: entry.price,
-            quantity: entry.quantity,
-          }));
-
-          // Update the voucher in the database
-          await updateVoucherInDB(partyName, products);
-
-          alert("Voucher updated successfully!");
-          navigator("/voucher");
-          break;
         }
-      }
 
-      if (!voucherFound) {
-        alert("Voucher not found");
+        if (!voucherFound) {
+          alert("Voucher not found");
+        }
+      } else {
+        alert("No voucher data found");
       }
-    } else {
-      alert("No voucher data found");
+    } catch (error) {
+      console.error("Error updating voucher data", error);
+      alert("Error updating voucher data: " + error.message);
     }
-  } catch (error) {
-    console.error("Error updating voucher data", error);
-    alert("Error updating voucher data: " + error.message);
-  }
-};
-
+  };
 
   return (
     <div className="container">
