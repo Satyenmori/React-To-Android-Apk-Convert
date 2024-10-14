@@ -506,7 +506,7 @@ export const getAllUnitNames = async () => {
     if (result.values && result.values.length > 0) {
       const unitNames = result.values.map((row) => row.name);
       // console.log("Retrieved product names:", languageNames);
-      alert("Retrieved unit names:", unitNames);
+      // alert("Retrieved unit names:", unitNames);
       return unitNames;
     } else {
       console.log("No Unit names found.");

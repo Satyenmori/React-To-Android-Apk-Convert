@@ -223,7 +223,7 @@ const Voucher = () => {
                       <button
                         className="delete-btn"
                         onClick={() =>
-                          handleDelete(entry.GUID, entry.PARTYNAME)
+                          handleDelete(entry.GUID, entry.PARTYLEDGERNAME)
                         }
                       >
                         {<FaTrash />}
