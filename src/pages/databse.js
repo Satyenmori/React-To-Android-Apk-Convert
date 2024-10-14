@@ -244,9 +244,10 @@ export const deleteVoucher = async (party) => {
     await db.run(deleteSalesQuery, [party]);
 
     await sqliteConnection.closeConnection("mydb");
-    console.log("Data deleted successfully from SQLite.");
+    alert("Data deleted successfully from SQLite.");
   } catch (err) {
     console.error("Failed to delete data from SQLite:", err);
+    alert("Failed to delete data from SQLite: " + err.message);
     throw new Error("Failed to delete data from SQLite: " + err.message);
   }
 };

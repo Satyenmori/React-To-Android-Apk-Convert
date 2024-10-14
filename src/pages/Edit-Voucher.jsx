@@ -317,9 +317,9 @@ const EditSales = () => {
 
   const removeEntry = async (index) => {
     const newEntries = [...entries];
-    const deletedEntry = newEntries[index]; // Store the entry to be deleted
-    newEntries.splice(index, 1); // Remove the entry from the state
-    setEntries(newEntries); // Update the state
+    const deletedEntry = newEntries[index];
+    newEntries.splice(index, 1);
+    setEntries(newEntries);
 
     // Read the existing XML file
     const file = await Filesystem.readFile({
@@ -488,7 +488,7 @@ const EditSales = () => {
                 xmlDoc.createElement("ISDEEMEDPOSITIVE");
               isDeemedPositiveElement.textContent = "No";
               existingEntry.appendChild(isDeemedPositiveElement);
-              
+
               const rateElement =
                 existingEntry.getElementsByTagName("RATE")[0] ||
                 existingEntry.appendChild(xmlDoc.createElement("RATE"));

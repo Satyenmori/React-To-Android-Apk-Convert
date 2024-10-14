@@ -48,28 +48,46 @@ const Voucher = () => {
   }, []);
 
   // Handle voucher deletion
-  const handleDelete = async (guid, party) => {
+  const handleDelete = async (guidToDelete, party) => {
     try {
-      const updatedVouchers = jsonContent.TALLYMESSAGE.VOUCHER.filter(
-        (voucher) => voucher.GUID !== guid
+      const xmlData = await Filesystem.readFile({
+        path: "Transaction.xml",
+        directory: Directory.External,
+        encoding: Encoding.UTF8,
+      });
+
+      const parser = new DOMParser();
+      const xmlDocument = parser.parseFromString(
+        xmlData.data,
+        "application/xml"
       );
 
-      const updatedJsonContent = {
-        ...jsonContent,
-        TALLYMESSAGE: {
-          ...jsonContent.TALLYMESSAGE,
-          VOUCHER: updatedVouchers,
-        },
-      };
+      const vouchers = xmlDocument.getElementsByTagName("VOUCHER");
+      let voucherFound = false;
 
-      const builder = new XMLBuilder({
-        ignoreAttributes: false,
-        ignoreTextNodeAttr: true,
-      });
-      const updatedXML = builder.build(updatedJsonContent);
+      for (let i = 0; i < vouchers.length; i++) {
+        const guidElement = vouchers[i].getElementsByTagName("GUID")[0];
 
-      // Store the updated XML back to local storage
-      // await Storage.set({ key: "salesXML", value: updatedXML });
+        if (guidElement && guidElement.textContent === guidToDelete) {
+          // Remove the voucher from its parent node
+          vouchers[i].parentNode.removeChild(vouchers[i]);
+          console.log(`Voucher with GUID ${guidToDelete} deleted.`);
+          voucherFound = true;
+          break;
+        }
+      }
+
+      if (!voucherFound) {
+        console.log(`Voucher with GUID ${guidToDelete} not found.`);
+        alert(`Voucher with GUID ${guidToDelete} not found.`);
+        return;
+      }
+
+      // Step 4: Rebuild the XML file
+      const serializer = new XMLSerializer();
+      const updatedXML = serializer.serializeToString(xmlDocument);
+
+      // Step 5: Write the updated XML back to the file
       await Filesystem.writeFile({
         path: "Transaction.xml",
         data: updatedXML,
@@ -77,15 +95,24 @@ const Voucher = () => {
         encoding: Encoding.UTF8,
       });
 
-      // Update state
-      setJsonContent(updatedJsonContent);
+      // Step 6: Update the state
+      setJsonContent((prevContent) => {
+        const updatedVouchers = prevContent.TALLYMESSAGE.VOUCHER.filter(
+          (voucher) => voucher.GUID !== guidToDelete
+        );
 
-      // sql data delete
+        return {
+          ...prevContent,
+          TALLYMESSAGE: {
+            ...prevContent.TALLYMESSAGE,
+            VOUCHER: updatedVouchers,
+          },
+        };
+      });
       await deleteVoucher(party);
-
-      alert("Voucher deleted successfully from File and SQL.");
+      alert("Voucher deleted and XML file updated successfully.");
     } catch (error) {
-      console.error("Error deleting voucher:", error);
+      console.error("Error deleting voucher or updating file:", error);
       alert("Error deleting voucher: " + error.message);
     }
   };
@@ -136,7 +163,7 @@ const Voucher = () => {
   return (
     <div className="container">
       <h2 style={{ color: "black", textAlign: "center" }}>VOUCHER DATA</h2>
-      
+
       <div className="top-bar">
         <div className="left">
           <Link to="/sales">
