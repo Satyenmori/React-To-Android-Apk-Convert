@@ -315,10 +315,66 @@ const EditSales = () => {
     ]);
   };
 
-  const removeEntry = (index) => {
+  const removeEntry = async (index) => {
     const newEntries = [...entries];
-    newEntries.splice(index, 1);
-    setEntries(newEntries);
+    const deletedEntry = newEntries[index]; // Store the entry to be deleted
+    newEntries.splice(index, 1); // Remove the entry from the state
+    setEntries(newEntries); // Update the state
+
+    // Read the existing XML file
+    const file = await Filesystem.readFile({
+      path: "Transaction.xml",
+      directory: Directory.External,
+      encoding: Encoding.UTF8,
+    });
+
+    if (file.data) {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(file.data, "text/xml");
+
+      const vouchers = xmlDoc.getElementsByTagName("VOUCHER");
+
+      for (let i = 0; i < vouchers.length; i++) {
+        const voucher = vouchers[i];
+        const guidElement = voucher.getElementsByTagName("GUID")[0];
+
+        if (guidElement && guidElement.textContent === guid) {
+          // Find the ALLINVENTORYENTRIES.LIST entries
+          const inventoryEntries = voucher.getElementsByTagName(
+            "ALLINVENTORYENTRIES.LIST"
+          );
+
+          // Find the entry to delete based on the product name or another identifier
+          for (let j = 0; j < inventoryEntries.length; j++) {
+            const existingEntry = inventoryEntries[j];
+            const stockItemName =
+              existingEntry.getElementsByTagName("STOCKITEMNAME")[0]
+                .textContent;
+
+            // Compare the product name
+            if (stockItemName === deletedEntry.product) {
+              // Remove the entry from the XML
+              voucher.removeChild(existingEntry);
+              break;
+            }
+          }
+
+          // Serialize and write back to XML
+          const serializer = new XMLSerializer();
+          const updatedXML = serializer.serializeToString(xmlDoc);
+
+          await Filesystem.writeFile({
+            path: "Transaction.xml",
+            directory: Directory.External,
+            data: updatedXML,
+            encoding: "utf8",
+          });
+
+          alert("Entry deleted successfully!");
+          break;
+        }
+      }
+    }
   };
 
   const getGrandTotal = () => {
@@ -428,6 +484,11 @@ const EditSales = () => {
               stockItemNameElement.textContent =
                 updatedEntry.product || stockItemNameElement.textContent;
 
+              const isDeemedPositiveElement =
+                xmlDoc.createElement("ISDEEMEDPOSITIVE");
+              isDeemedPositiveElement.textContent = "No";
+              existingEntry.appendChild(isDeemedPositiveElement);
+              
               const rateElement =
                 existingEntry.getElementsByTagName("RATE")[0] ||
                 existingEntry.appendChild(xmlDoc.createElement("RATE"));
@@ -479,12 +540,11 @@ const EditSales = () => {
                   trackingNumberElement.firstChild
                 );
               }
-              // trackingNumberElement.textContent = "&#4; Not Applicable";
               const trackingNumberValue = xmlDoc.createCDATASection(
                 "&#4; Not Applicable"
               );
               trackingNumberElement.appendChild(trackingNumberValue);
-              
+
               const actualQtyBatchElement =
                 batchAllocations.getElementsByTagName("ACTUALQTY")[0] ||
                 batchAllocations.appendChild(xmlDoc.createElement("ACTUALQTY"));
