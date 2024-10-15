@@ -141,9 +141,9 @@ const Voucher = () => {
       if (isMobile) {
         try {
           await Filesystem.writeFile({
-            path: "File1.xml",
+            path: "Transaction.xml",
             data: xmlData,
-            directory: Directory.External,
+            directory: Directory.Documents,
             encoding: Encoding.UTF8,
           });
           alert("File downloaded successfully to mobile device!");
