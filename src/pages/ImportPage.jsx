@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Storage } from "@capacitor/storage";
 import "../Style/Import.css";
 import importImage from "../images/import1.png";
+import { FaSpinner } from "react-icons/fa";
 import {
   initDB,
   saveLanguageNames,
@@ -13,9 +14,8 @@ function XmlFileRead() {
   const [fileInfos, setFileInfos] = useState([
     { name: null, dateTime: null, key: "File1" },
     { name: null, dateTime: null, key: "File2" },
-    { name: null, dateTime: null, key: "File3" },
   ]);
-
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     const loadFileInfos = async () => {
       try {
@@ -50,6 +50,7 @@ function XmlFileRead() {
           dateTime: currentDateTime,
         };
         setFileInfos(updatedInfos);
+        setLoading(true);
         if (index === 0) {
           // File1: Party XML
           await saveFileToStorage(
@@ -67,12 +68,14 @@ function XmlFileRead() {
             "product"
           );
         }
+        setLoading(false);
       } else {
         alert("No file selected.");
       }
     } catch (error) {
       console.error("Error opening file picker:", error);
       alert("Error opening file picker: " + error.message);
+      setLoading(false);
     }
   };
 
@@ -147,22 +150,23 @@ function XmlFileRead() {
 
             allNames = allNames.concat(nameMatches);
           });
-
+          setLoading(true);
           // Party,Unit & Product Name Store database
-          if (type === "party") {
-            await saveLanguageNames(allNames);
-            await saveUnitNames(allNamesFromUnits);
-            // allNames.forEach((name) => {
-            //   console.log("Party Name:", name);
-            // });
-            // allNamesFromUnits.forEach((name) => {
-            //   console.log("Unit Names", name);
-            // });
-          } else if (type === "product") {
-            await saveproductNames(allNames);
-            allNames.forEach((name) => {
-              console.log("Product Name:", name);
-            });
+          try {
+            if (type === "party") {
+              await saveLanguageNames(allNames);
+              await saveUnitNames(allNamesFromUnits);
+            } else if (type === "product") {
+              await saveproductNames(allNames);
+              allNames.forEach((name) => {
+                console.log("Product Name:", name);
+              });
+            }
+          } catch (dbError) {
+            console.error("Error saving to database:", dbError);
+            alert("Error saving to database: " + dbError.message);
+          } finally {
+            setLoading(false); 
           }
         } else {
           console.log("No <LANGUAGENAME.LIST> found.");
@@ -182,12 +186,14 @@ function XmlFileRead() {
       reader.onerror = (err) => {
         console.error("Error reading file:", err);
         alert("Error reading file: " + err.message);
+        setLoading(false);
       };
 
       reader.readAsText(file);
     } catch (error) {
       console.error("Error processing file:", error);
       alert("Error processing file: " + error.message);
+      setLoading(false);
     }
   };
 
@@ -211,11 +217,22 @@ function XmlFileRead() {
         {fileInfos.map((info, index) => (
           <div className="import-section" key={index}>
             <button className="btn" onClick={() => openFilePicker(index)}>
-              Select XML File
+              {loading ? (
+                <FaSpinner className="spinner" />
+              ) : index === 0 ? (
+                "Select Ledger File"
+              ) : (
+                "Select Product File"
+              )}
             </button>
-            <div className="file-info">
-              {info.name ? (
-                <div>
+            <div className="C">
+              {loading ? (
+                <div className="loading-info">
+                  <FaSpinner className="spinner" />
+                  <p>Please wait...</p>
+                </div>
+              ) : info.name ? (
+                <div className="file-info">
                   <h2>Selected File:</h2>
                   <p>Name: {info.name}</p>
                   <p className="date">Date: {info.dateTime}</p>

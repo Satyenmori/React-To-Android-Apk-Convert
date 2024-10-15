@@ -72,3 +72,50 @@
     justify-content: space-around;
   }
 }
+
+/* loder-spiner */
+.C {
+  margin-top: 10px; 
+  padding: 10px; 
+  border: 1px solid #ccc; 
+  border-radius: 5px; 
+  background-color: #f9f9f9; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: flex-start; 
+  justify-content: center; 
+  min-height: 80px; 
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
+}
+
+
+.loading-info {
+  display: flex; 
+  align-items: center; 
+  color: #333; 
+  font-weight: bold; 
+}
+
+
+.date {
+  font-size: 0.9em; 
+  color: #666; 
+}
+.spinner {
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+.loading-info {
+  display: flex; 
+  align-items: center;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
