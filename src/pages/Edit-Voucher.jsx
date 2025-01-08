@@ -382,7 +382,7 @@ const EditSales = () => {
       .reduce((total, entry) => total + parseFloat(entry.subtotal || 0), 0)
       .toFixed(2);
   };
-
+  
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
@@ -586,7 +586,7 @@ const EditSales = () => {
                 accountingAllocations.appendChild(
                   xmlDoc.createElement("LEDGERNAME")
                 );
-              ledgerNameElement.textContent = "Sales Ledger";
+              ledgerNameElement.textContent = "Salse A/c";
 
               // Update accounting amount
               const accountingAmountElement =
@@ -622,7 +622,7 @@ const EditSales = () => {
               path: "Transaction.xml",
               directory: Directory.External,
               data: updatedXML,
-              encoding: "utf8",
+              encoding: Encoding.UTF8,
             });
 
             // Prepare data for database update

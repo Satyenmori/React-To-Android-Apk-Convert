@@ -519,3 +519,43 @@ export const getAllUnitNames = async () => {
     return [];
   }
 };
+
+// 3 table bulk Delete query
+export const deleteAllData = async () => {
+  let db = null;
+  try {
+    const isConnectionExists = (await sqliteConnection.isConnection("mydb"))
+      .result;
+    if (isConnectionExists) {
+      db = await sqliteConnection.retrieveConnection("mydb");
+    } else {
+      // Create a new connection if one doesn't exist
+      db = await sqliteConnection.createConnection(
+        "mydb",
+        false,
+        "no-encryption",
+        1
+      );
+    }
+
+    await db.open();
+    // Use a single query to delete all data from partyname, product, and unit tables
+    const deleteAllQuery = `
+      DELETE FROM partyname;
+      DELETE FROM product;
+      DELETE FROM unit;
+    `;
+    await db.execute(deleteAllQuery);
+
+    if (!isConnectionExists) {
+      await sqliteConnection.closeConnection("mydb");
+    }
+
+    alert(
+      "All data deleted successfully from partyname, product, and unit tables."
+    );
+  } catch (err) {
+    console.error("Failed to delete data:", err);
+    alert("Failed to delete data: " + err.message);
+  }
+};

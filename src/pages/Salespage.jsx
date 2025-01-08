@@ -385,7 +385,7 @@ const Sales = () => {
                         <OLDAUDITENTRYIDS.LIST TYPE="Number">
                           <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
                         </OLDAUDITENTRYIDS.LIST>
-                        <LEDGERNAME>Sales Ledger</LEDGERNAME>
+                        <LEDGERNAME>Salse A/c</LEDGERNAME>
                         <GSTCLASS>Not Applicable</GSTCLASS>
                         <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
                         <LEDGERFROMITEM>No</LEDGERFROMITEM>

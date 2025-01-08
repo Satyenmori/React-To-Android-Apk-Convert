@@ -4,6 +4,7 @@ import "../Style/Import.css";
 import importImage from "../images/import1.png";
 import { FaSpinner } from "react-icons/fa";
 import {
+  deleteAllData,
   initDB,
   saveLanguageNames,
   saveproductNames,
@@ -95,7 +96,11 @@ function XmlFileRead() {
       input.click();
     });
   };
-
+  function decodeHTMLEntities(text) {
+    const textArea = document.createElement("textarea");
+    textArea.innerHTML = text;
+    return textArea.value;
+  }
   const saveFileToStorage = async (file, dateTime, key, type) => {
     try {
       const reader = new FileReader();
@@ -146,7 +151,7 @@ function XmlFileRead() {
 
             const nameMatches = [
               ...languageListContent.matchAll(/<NAME>(.*?)<\/NAME>/g),
-            ].map((nameMatch) => nameMatch[1]);
+            ].map((nameMatch) => decodeHTMLEntities(nameMatch[1]));
 
             allNames = allNames.concat(nameMatches);
           });
@@ -166,7 +171,7 @@ function XmlFileRead() {
             console.error("Error saving to database:", dbError);
             alert("Error saving to database: " + dbError.message);
           } finally {
-            setLoading(false); 
+            setLoading(false);
           }
         } else {
           console.log("No <LANGUAGENAME.LIST> found.");
@@ -196,7 +201,25 @@ function XmlFileRead() {
       setLoading(false);
     }
   };
+  const handleDelete = async () => {
+    try {
+      // Step 1: Delete data from SQL tables
+      await deleteAllData();
 
+      // Step 2: Clear relevant local storage keys
+      await Storage.clear();
+      setFileInfos((prev) =>
+        prev.map((info) => ({
+          ...info,
+          name: null,
+          dateTime: null,
+        }))
+      );      
+    } catch (error) {
+      console.error("Error while deleting data:", error);
+      alert("Error while deleting data: " + error.message);
+    }
+  };
   useEffect(() => {
     const initializeDatabase = async () => {
       try {
@@ -225,6 +248,7 @@ function XmlFileRead() {
                 "Select Product File"
               )}
             </button>
+            {/* <button onClick={handleDelete}>Delete</button> */}
             <div className="C">
               {loading ? (
                 <div className="loading-info">

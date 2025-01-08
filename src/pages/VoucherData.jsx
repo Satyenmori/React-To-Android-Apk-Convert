@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Storage } from "@capacitor/storage";
 import { XMLBuilder, XMLParser } from "fast-xml-parser";
 import "../Style/Voucherdata.css";
-import { FaEdit, FaTrash } from "react-icons/fa";
+import { FaEdit, FaPrint, FaTrash } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { saveAs } from "file-saver";
 import { deleteVoucher, getAllLanguageNames } from "./databse";
 import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 const Voucher = () => {
   const [jsonContent, setJsonContent] = useState(null);
@@ -140,13 +142,30 @@ const Voucher = () => {
 
       if (isMobile) {
         try {
+          let baseName = "Transaction";
+          let extension = ".xml";
+          let fileName = `${baseName}${extension}`;
+          let fileExists = true;
+          let counter = 0;
+          while (fileExists) {
+            try {
+              await Filesystem.readFile({
+                path: fileName,
+                directory: Directory.Documents,
+              });
+              counter++;
+              fileName = `${baseName}_${counter}${extension}`;
+            } catch (error) {
+              fileExists = false;
+            }
+          }
           await Filesystem.writeFile({
-            path: "Transaction.xml",
+            path: fileName,
             data: xmlData,
             directory: Directory.Documents,
             encoding: Encoding.UTF8,
           });
-          alert("File downloaded successfully to mobile device!");
+          alert("File downloaded successfully in storage/Documents");
         } catch (error) {
           console.error("Error saving file on mobile:", error);
           alert("Error downloading file on mobile: " + error.message);
@@ -159,11 +178,117 @@ const Voucher = () => {
       alert("No sales data available to print.");
     }
   };
+  const handlePrintA8Size = async (guid) => {
+    const voucher = jsonContent?.TALLYMESSAGE?.VOUCHER?.find(
+      (entry) => entry.GUID === guid
+    );
+
+    if (!voucher) {
+      alert("Voucher not found.");
+      return;
+    }
+
+    const partyName = voucher.PARTYLEDGERNAME || "Unknown Party";
+    const stockItems = voucher["ALLINVENTORYENTRIES.LIST"];
+    const stockItemsArray = Array.isArray(stockItems)
+      ? stockItems
+      : stockItems
+      ? [stockItems]
+      : [];
+
+    const itemsDetails = stockItemsArray.map((item) => ({
+      name: item["STOCKITEMNAME"] || "Unknown Item",
+      quantity: item["ACTUALQTY"] || 0,
+      price: item["RATE"] || 0,
+      amount: item["AMOUNT"] || 0,
+    }));
+
+    const grandTotal = itemsDetails.reduce(
+      (sum, item) => sum + parseFloat(item.amount),
+      0
+    );
+
+    const doc = new jsPDF({
+      unit: "mm",
+      format: [52, 74], // A8 size in mm
+    });
+
+    doc.setFontSize(8);
+    doc.text("Sales Challan", 17, 10);
+    doc.setFontSize(6);
+    doc.text(`Party Name: ${partyName}`, 5, 16);
+
+    doc.setFontSize(7);
+    let y = 22;
+    const rowHeight = 10;
+
+    // Table Header
+    doc.rect(5, y, 42, rowHeight);
+    doc.setFontSize(5);
+    doc.text("Item Name", 6, y + 4);
+    doc.text("Qty", 22, y + 4);
+    doc.text("Price", 30, y + 4);
+    doc.text("Amount", 40, y + 4);
+
+    // Table Rows
+    for (let i = 0; i < itemsDetails.length; i += 2) {
+      y += rowHeight;
+      doc.rect(5, y, 42, rowHeight);
+
+      // First product
+      const firstProduct = itemsDetails[i];
+      const splitFirstName = doc.splitTextToSize(firstProduct.name, 18);
+      doc.text(splitFirstName, 6, y + 4);
+      doc.text(String(firstProduct.quantity), 22, y + 4);
+      doc.text(String(firstProduct.price), 30, y + 4);
+      doc.text(String(firstProduct.amount), 40, y + 4);
+
+      if (itemsDetails[i + 1]) {
+        y += rowHeight;
+        doc.rect(5, y, 42, rowHeight);
+
+        const secondProduct = itemsDetails[i + 1];
+        const splitSecondName = doc.splitTextToSize(secondProduct.name, 18);
+        doc.text(splitSecondName, 6, y + 4);
+        doc.text(String(secondProduct.quantity), 22, y + 4);
+        doc.text(String(secondProduct.price), 30, y + 4);
+        doc.text(String(secondProduct.amount), 40, y + 4);
+      }
+    }
+
+    y += rowHeight;
+    doc.setFontSize(7);
+    doc.rect(5, y, 42, rowHeight);
+    doc.text("Grand Total", 18, y + 7);
+    doc.text(`${grandTotal.toFixed(2)}`, 35, y + 7);
+
+    const pdfBlob = doc.output("blob");
+
+    const reader = new FileReader();
+    reader.readAsDataURL(pdfBlob);
+    reader.onloadend = async function () {
+      const base64data = reader.result.split(",")[1];
+
+      try {
+        const fileName = `${partyName}.pdf`;
+        await Filesystem.writeFile({
+          path: fileName,
+          data: base64data,
+          directory: Directory.Documents,
+        });
+
+        console.log("PDF saved successfully to internal storage:", fileName);
+        alert(`PDF saved as ${fileName}`);
+      } catch (error) {
+        console.error("Error saving PDF to internal storage:", error);
+      }
+    };
+  };
 
   return (
     <div className="container">
       <h2 style={{ color: "black", textAlign: "center" }}>VOUCHER DATA</h2>
-
+      
       <div className="top-bar">
         <div className="left">
           <Link to="/sales">
@@ -192,6 +317,7 @@ const Voucher = () => {
                 <th>Product</th>
                 <th>Amount</th>
                 <th>Actions</th>
+                <th>Print</th>
               </tr>
             </thead>
             <tbody>
@@ -227,6 +353,14 @@ const Voucher = () => {
                         }
                       >
                         {<FaTrash />}
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        className="print-btn"
+                        onClick={() => handlePrintA8Size(entry.GUID)}
+                      >
+                        {<FaPrint />}
                       </button>
                     </td>
                   </tr>
